@@ -1,56 +1,5 @@
 import pandas as pd
 import yfinance as yf
-'''
-def fetch_stock_closes(symbols: list[str], start_date: str, end_date: str) -> pd.DataFrame:
-    """
-    Fetches the daily closing prices for a list of stock symbols over a specified date range.
-
-    Parameters:
-    symbols (list[str]): Stock symbols for which to fetch the closing prices.
-    start_date (str): The starting date of the period (format: 'YYYY-MM-DD').
-    end_date (str): The ending date of the period (format: 'YYYY-MM-DD').
-
-    Returns:
-    pandas.DataFrame: A DataFrame with dates as the index and stock symbols as columns,
-                      containing the closing prices for each stock symbol over the date range.
-    """
-
-    # Initialize an empty DataFrame to store close prices
-    close_prices = pd.DataFrame()
-
-    # Loop to load data for each symbol
-    for symbol in symbols:
-        try:
-            # Fetch stock data from Yahoo Finance
-            stock_data = yf.download(symbol, start=start_date, end=end_date)
-            # Create a temporary DataFrame to store the close prices
-            temp_data = pd.DataFrame({
-                'Date': stock_data.index,
-                'Close': stock_data['Close'],
-                'Symbol': symbol
-            })
-            # Append to the main DataFrame
-            close_prices = pd.concat([close_prices, temp_data])
-        except Exception as e:
-            print(f"Error loading data for {symbol}: {e}")
-
-    # Pivot the data to have symbols as columns and dates as index
-    stock_closes = close_prices.pivot(index='Date', columns='Symbol', values='Close')
-
-    # Return the final DataFrame
-    return stock_closes
-
-# Example of function call
-symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA', 'NVDA', 'NFLX', 'INTC', 'META']
-start_date = '2010-01-01'
-end_date = '2024-01-01'
-stock_data = fetch_stock_closes(symbols, start_date, end_date)
-print(stock_data)
-
-
-'''
-import pandas as pd
-import yfinance as yf
 from datetime import datetime, timedelta
 
 
