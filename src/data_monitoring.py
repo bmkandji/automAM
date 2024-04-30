@@ -1,7 +1,7 @@
 import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
-
+from common import compute_log_returns
 
 class StockData:
     def __init__(self, symbols: list[str]):
@@ -12,8 +12,8 @@ class StockData:
         symbols (list[str]): A list of stock symbols for fetching data.
         """
         self.symbols = symbols
-        self.end_date = None
         self.data = pd.DataFrame()
+        self.log_returns = pd.DataFrame()
 
     def fetch_data(self, start_date: str, end_date: str) -> int:
         """
@@ -41,14 +41,14 @@ class StockData:
                 new_data = pd.concat([new_data, temp_data])
             except Exception as e:
                 print(f"Error fetching data for {symbol}: {e}")
-        # Update the end date in the object
-        self.end_date = end_date
+
         # Remove duplicates and reset index
         if not new_data.empty:
             new_data.set_index('Date', inplace=True)
-            new_data = new_data.pivot(columns='Symbol', values='Close')
+            new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close'))
             initial_data_length = len(self.data)
             self.data = pd.concat([self.data, new_data]).drop_duplicates()
+            self.replace_NA_with_rolling_mean()
             new_data_length = len(self.data) - initial_data_length
             return new_data_length
 
@@ -64,20 +64,36 @@ class StockData:
         """
         if new_end_date is None:
             new_end_date = datetime.today().strftime('%Y-%m-%d')
-        start_date_update = (datetime.strptime(self.end_date, '%Y-%m-%d') + timedelta(days=1)).strftime('%Y-%m-%d')
+        start_date_update = self.data.index.max()
         new_rows_added = self.fetch_data(start_date_update, new_end_date)
 
         # Remove the same number of oldest rows as new rows added
         if len(self.data) > new_rows_added:
             self.data = self.data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
 
+    def replace_NA_with_rolling_mean(self, window: int = 5) -> None:
+        """
+        Replaces NA values in the DataFrame with the rolling mean calculated over a specified window size.
+
+        Parameters:
+        window (int): The size of the rolling window to calculate the means, default is 5.
+        """
+        # Calculate the rolling mean with a specified window, minimum number of observations in the window required to have a value is 1
+        roll_means = self.data.rolling(window=window, min_periods=1, center=False).mean()
+
+        # Replace NA values in the DataFrame with the calculated rolling means
+        self.data.fillna(roll_means, inplace=True)
+
+
+
+
 
 # Example usage
 symbols = ['AAPL', 'MSFT', 'GOOGL']
 stock_data_manager = StockData(symbols)
-stock_data_manager.fetch_data('2020-01-01', '2020-12-31')
+stock_data_manager.fetch_data('2020-01-01', '2020-01-10')
 print(stock_data_manager.data)  # Print the initial data
 
 # Update this data with new entries and manage the size
-stock_data_manager.update_data()
+stock_data_manager.update_data('2020-01-15')
 print(stock_data_manager.data)  # Print the updated data
