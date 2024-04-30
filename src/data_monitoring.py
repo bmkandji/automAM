@@ -17,15 +17,16 @@ class StockData:
 
     def fetch_data(self, start_date: str, end_date: str) -> int:
         """
-        Fetches the daily closing prices for a list of stock symbols over a specified date range and appends
-        the data to the internal DataFrame.
+        Fetches the daily closing prices for a list of stock symbols over a specified date range, calculates log returns,
+        applies a rolling mean to handle NA values, and appends the data to the internal DataFrame. This method ensures that
+        the end date specified is inclusive by adjusting the date range internally.
 
         Parameters:
         start_date (str): The starting date of the period (format: 'YYYY-MM-DD').
-        end_date (str): The ending date of the period (format: 'YYYY-MM-DD').
+        end_date (str): The ending date of the period (format: 'YYYY-MM-DD'), adjusted to be inclusive.
 
         Returns:
-        int: The number of new rows added to the DataFrame.
+        int: The number of new rows added to the DataFrame after processing.
         """
         new_data = pd.DataFrame()
         for symbol in self.symbols:
