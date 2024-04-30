@@ -3,12 +3,13 @@ import pandas as pd
 import numpy as np
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
+from rpy2.robjects.vectors import ListVector
 from src.data_monitoring import StockData
 from src.rpy2_setup import setup_environment
 import utils.load_model as lo_m
 
 class DCCGARCHModel:
-    def __init__(self, data: StockData, model_info: str):
+    def __init__(self, data: StockData, model_config: str):
         """
         Initialize the DCC GARCH Model with necessary data and configurations.
 
@@ -21,7 +22,7 @@ class DCCGARCHModel:
         and defining necessary R functions for DCC GARCH analysis.
         """
         self.data = data
-        self.model_info = model_info
+        self.model_config = model_config
         self.forecast = None
         self.setup_environment()
         self.define_r_functions()
@@ -33,7 +34,6 @@ class DCCGARCHModel:
         configures the R environment, including loading any required R packages.
         """
         setup_environment()
-
     def define_r_functions(self):
         """
         Define R functions necessary for DCC GARCH model analysis.
@@ -47,28 +47,55 @@ class DCCGARCHModel:
         - Returning forecast results including means and covariances.
         """
         ro.r('''
-        library(rmgarch)
-        run_dcc_garch_and_forecast <- function(returns, model_path, model_available, n_ahead) {
-            dccfit <- NULL
-            if (model_available) {
-                dccfit <- tryCatch({ readRDS(model_path) }, error=function(e) {
-                    print(paste("Error reading RDS:", e$message))
-                    NULL
-                })
+            # Load the 'rmgarch' package, which is necessary for running multivariate GARCH models.
+            library(rmgarch)
+            
+            # Define the function 'run_dcc_garch_and_forecast' with necessary parameters.
+            run_dcc_garch_and_forecast <- function(returns, model_config, model_available, n_ahead) {
+                # Initialize 'dccfit' to NULL. This variable will store the fitted model.
+                dccfit <- NULL
+            
+                # Attempt to load an existing model if it is indicated as available.
+                if (model_available) {
+                    dccfit <- tryCatch({
+                        # Try to read the model from a specified path.
+                        readRDS(model_config$model_path)
+                    }, error=function(e) {
+                        # If an error occurs while reading, print the error message and return NULL.
+                        print(paste("Error reading RDS:", e$message))
+                        NULL
+                    })
+                }
+            
+                # If no model is loaded (i.e., dccfit is still NULL), fit a new model.
+                if (is.null(dccfit)) {
+                    # Define the GARCH model specification using parameters from 'model_config'.
+                    spec <- ugarchspec(variance.model=list(model=model_config$model), 
+                                       mean.model=list(armaOrder=model_config$armaOrder), 
+                                       distribution.model=model_config$distribution_garch)
+                    # Replicate the model specification across the number of columns in 'returns' data.
+                    multispec <- multispec(replicate(ncol(returns), spec))
+                    # Define the DCC model specification.
+                    dccspec <- dccspec(uspec=multispec, dccOrder=model_config$dccOrder, 
+                                       distribution=model_config$distribution_dcc)
+                    # Fit the DCC model.
+                    dccfit <- dccfit(dccspec, data=returns, out.sample=0)
+                    # Try to save the fitted model to a file.
+                    tryCatch({
+                        saveRDS(dccfit, file=model_config$model_path)
+                    }, error=function(e) {
+                        # If an error occurs while saving, print the error message.
+                        print(paste("Failed to save model:", e$message))
+                    })
+                }
+            
+                # Forecast using the fitted model.
+                fcast <- dccforecast(dccfit, n.ahead=n_ahead)
+                # Calculate covariance matrices for each forecast period.
+                covariance <- lapply(1:n_ahead, function(i) fcast@mforecast$H[[1]][,,i])
+                # Return a list containing the mean forecasts and covariance matrices.
+                return(list(means=fcast@mforecast$mu, covariances=covariance))
             }
-            if (is.null(dccfit)) {
-                spec <- ugarchspec(variance.model=list(model="sGARCH"), mean.model=list(armaOrder=c(2, 1)), distribution.model="norm")
-                multispec <- multispec(replicate(ncol(returns), spec))
-                dccspec <- dccspec(uspec=multispec, dccOrder=c(1, 1), distribution="mvt")
-                dccfit <- dccfit(dccspec, data=returns, out.sample=0)
-                tryCatch({ saveRDS(dccfit, file=model_path) }, error=function(e) {
-                    print(paste("Failed to save model:", e$message))
-                })
-            }
-            fcast <- dccforecast(dccfit, n.ahead=n_ahead)
-            covariance <- lapply(1:n_ahead, function(i) fcast@mforecast$H[[1]][,,i])
-            return(list(means=fcast@mforecast$mu, covariances=covariance))
-        }
         ''')
 
     def _forecast(self, n_ahead: int = 5):
@@ -84,13 +111,42 @@ class DCCGARCHModel:
         This method activates the interface between pandas and R, converts stock data to an R-compatible format,
         checks model availability, and executes the R forecasting function. The results are stored and returned.
         """
-        config = lo_m.load_json_config(self.model_info)
+        # Load the JSON configuration for the model using a utility function.
+        # This configuration contains paths, model specifications, and other necessary settings.
+        config = lo_m.load_json_config(self.model_config)
+
+        # Activate the automatic conversion of pandas data structures to R data structures.
+        # This is crucial for passing pandas DataFrame or Series objects directly to R functions.
         pandas2ri.activate()
+
+        # Convert the DataFrame stored in 'self.data.data' to an R data.frame using rpy2's conversion.
+        # This is necessary because R functions expect data in R data.frame format.
         r_returns = pandas2ri.py2rpy(self.data.data)
+
+        # Check if the symbols in the configuration match those in the data.
+        # This is a form of validation to ensure that the data being processed is as expected.
         model_available = set(config["symbols"]) == set(self.data.symbols)
-        results = ro.globalenv['run_dcc_garch_and_forecast'](r_returns, config["model"], model_available, n_ahead)
+
+        # Create an R list vector to hold the configuration parameters for the R function.
+        # Each parameter is converted to the appropriate R type, such as using IntVector for integer arrays.
+        model_config_vector = ListVector({
+            'model_path': config['model_config']['model_path'],  # Path to the model file.
+            'model': config['model_config']['model'],  # Model type, e.g., 'sGARCH'.
+            'armaOrder': ro.IntVector(config['model_config']['armaOrder']),  # ARMA order as an integer vector.
+            'dccOrder': ro.IntVector(config['model_config']['dccOrder']),  # DCC model order.
+            'distribution_garch': config['model_config']['distribution_garch'],  # GARCH distribution.
+            'distribution_dcc': config['model_config']['distribution_dcc']  # DCC distribution.
+        })
+
+        # Call the R function 'run_dcc_garch_and_forecast' with the necessary parameters.
+        # This function is expected to perform GARCH modeling and forecasting.
+        results = ro.globalenv['run_dcc_garch_and_forecast'](r_returns, model_config_vector, model_available, n_ahead)
+
+        # Process the returned results from R, extracting means and covariances.
+        # Convert them to numpy arrays for easier manipulation and use in Python.
         self.forecast = {"means": [np.array(vec).flatten() for vec in results.rx2('means')],
                          "covariances": [np.array(vec) for vec in results.rx2('covariances')]}
+
         return self.forecast
 
 # Usage example
@@ -99,7 +155,7 @@ stock_data_manager = StockData(symbols)
 stock_data_manager.fetch_data('2018-01-01', '2020-01-10')
 print(stock_data_manager.data)  # Initial data
 
-model_info = 'C:/Users/MatarKANDJI/automAM/src/settings/stocks_settings.json'
+model_info = 'C:/Users/MatarKANDJI/automAM/src/model_settings/stocks_settings.json'
 dcc_garch_model = DCCGARCHModel(stock_data_manager, model_info)
 forecast_results = dcc_garch_model._forecast()
 print(forecast_results)

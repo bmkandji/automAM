@@ -1,7 +1,0 @@
-{   "star_date": "2010-01-01",
-    "end_date": "2020-01-01",
-    "symbols": ["AAPL", "MSFT", "GOOGL"],
-    "model": "C:/Users/MatarKANDJI/automAM/src/settings/stocks_dcc_spec_model.rds",
-    "strategies" : "mean_var",
-    "aversion" : 3
-}
