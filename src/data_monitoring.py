@@ -2,16 +2,16 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
 from src.common import compute_log_returns
-
+import utils.load_model as lo_m
 class StockData:
-    def __init__(self, symbols: list[str]):
+    def __init__(self, data_config: str):
         """
         Initialize the StockData object with stock symbols.
 
         Parameters:
         symbols (list[str]): A list of stock symbols for fetching data.
         """
-        self.symbols = symbols
+        self.symbols = lo_m.load_json_config(data_config)["symbols"]
         self.data = pd.DataFrame()
 
     def fetch_data(self, start_date: str, end_date: str) -> int:
@@ -89,8 +89,8 @@ class StockData:
 
 
 # Example usage
-symbols = ['AAPL', 'MSFT', 'GOOGL']
-stock_data_manager = StockData(symbols)
+data_config = 'C:/Users/MatarKANDJI/automAM/src/model_settings/stocks_settings.json'
+stock_data_manager = StockData(data_config)
 stock_data_manager.fetch_data('2020-01-01', '2020-01-10')
 print(stock_data_manager.data)  # Print the initial data
 

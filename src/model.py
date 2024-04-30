@@ -150,8 +150,8 @@ class DCCGARCHModel:
         return self.forecast
 
 # Usage example
-symbols = ['AAPL', 'MSFT', 'GOOGL']
-stock_data_manager = StockData(symbols)
+data_config = 'C:/Users/MatarKANDJI/automAM/src/model_settings/stocks_settings.json'
+stock_data_manager = StockData(data_config)
 stock_data_manager.fetch_data('2018-01-01', '2020-01-10')
 print(stock_data_manager.data)  # Initial data
 

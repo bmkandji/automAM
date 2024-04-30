@@ -22,3 +22,23 @@ def validate_model_path(path: str) -> str:
     if not os.path.exists(path):
         raise FileNotFoundError(f"Model file not found at {path}")
     return path
+
+
+def safe_operation(function, arguments):
+    """
+    Attempts to perform an operation safely, returning None if an exception occurs.
+
+    Args:
+    data (Any): Input data on which the operation is performed.
+
+    Returns:
+    Any or None: Result of the operation if successful, None otherwise.
+    """
+    try:
+        # Simulate an operation that might fail
+        result = function(arguments)  # Example operation, replace with actual operation
+        return result
+    except Exception as e:
+        # Optionally print or log the error if necessary
+        print(f"Operation failed with error: {e}")
+        return None
