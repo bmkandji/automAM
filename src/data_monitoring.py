@@ -13,7 +13,6 @@ class StockData:
         """
         self.symbols = symbols
         self.data = pd.DataFrame()
-        self.log_returns = pd.DataFrame()
 
     def fetch_data(self, start_date: str, end_date: str) -> int:
         """
