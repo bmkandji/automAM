@@ -1,7 +1,7 @@
 import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
-from common import compute_log_returns
+from src.common import compute_log_returns
 
 class StockData:
     def __init__(self, symbols: list[str]):
