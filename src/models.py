@@ -7,6 +7,7 @@ from src.strategies import AmStrategies
 from _setup.rpy2_setup import setup_environment
 import utils.load_model as lo_m
 from src.common import compute_weights
+from tools.settings import Portfolio, _Position
 
 
 class MeanVar_Model:
@@ -148,8 +149,10 @@ class MeanVar_Model:
         means = np.array([np.array(vec).flatten() for vec in results.rx2('means')])
         covariances = np.array([np.array(vec) for vec in results.rx2('covariances')])
         self.mean_var = {
-                         "mean": compute_weights(means, scheme=self.model_config['model_config']["weights"]),
-                         "covariance": compute_weights(covariances, scheme=self.model_config['model_config']["weights"])
+                        "mean": compute_weights(means, scheme=self.model_config['model_config']["weights"]),
+                        "covariance": compute_weights(covariances, scheme=self.model_config['model_config']["weights"]),
+                        "date": self.data.data_config["end_date"],
+                        "n_ahead": n_ahead
                          }
 
         return self.mean_var
@@ -157,23 +160,24 @@ class MeanVar_Model:
 
 # Usage example
 data_config = r'C:\Users\MatarKANDJI\automAM\src\data_settings\data_settings.json'
-stock_data_manager = StockData(data_config)
-stock_data_manager.fetch_data('2018-01-01', '2020-01-10')
-print(stock_data_manager.data)  # Initial data
+stock_data = StockData(data_config)
+stock_data.fetch_data('2008-01-01', '2024-01-10')
+print(stock_data.data)  # Initial data
 
 model_config = r'C:\Users\MatarKANDJI\automAM\src\model_settings\model_settings.json'
-dcc_garch_model = MeanVar_Model(stock_data_manager, model_config)
+dcc_garch_model = MeanVar_Model(stock_data, model_config)
 forecast_results = dcc_garch_model.f_cast()
 print(forecast_results)
 
 strat_config = r'C:\Users\MatarKANDJI\automAM\src\strat_settings\strat_settings.json'
 n = len(dcc_garch_model.mean_var["mean"])
 weights = np.ones(n) / n
-position = {
-    "capital": 1,
-    "weights": weights,
-    "date": None,
-}
-strategy = AmStrategies(dcc_garch_model.mean_var, strat_config, position )
+
+_position = _Position(1, weights, stock_data.data_config["end_date"])
+#portfolio = Portfolio(stock_data.data_config)
+#portfolio.update_position(position)
+
+strategy = AmStrategies(dcc_garch_model.mean_var, strat_config, _position)
 strategy.fit()
-print(strategy._position)
+print(strategy._position.next_weights)
+print(strategy._position.date)

@@ -89,7 +89,7 @@ class StockData:
 
 
 
-
+'''
 # Example usage
 data_config = 'C:/Users/MatarKANDJI/automAM/src/data_settings/data_settings.json'
 stock_data_manager = StockData(data_config)
@@ -100,3 +100,4 @@ print(stock_data_manager.data)  # Print the initial data
 stock_data_manager.update_data('2020-01-15')
 print(stock_data_manager.data)  # Print the updated data
 print(stock_data_manager.data_config)
+'''
