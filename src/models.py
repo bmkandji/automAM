@@ -7,7 +7,7 @@ from src.strategies import AmStrategies
 from _setup.rpy2_setup import setup_environment
 import utils.load_model as lo_m
 from src.common import compute_weights
-from tools.settings import Portfolio, _Position
+from tools.settings import Portfolio, Position
 
 
 class MeanVar_Model:
@@ -173,11 +173,11 @@ strat_config = r'C:\Users\MatarKANDJI\automAM\src\strat_settings\strat_settings.
 n = len(dcc_garch_model.mean_var["mean"])
 weights = np.ones(n) / n
 
-_position = _Position(1, weights, stock_data.data_config["end_date"])
+position = Position(1, weights, stock_data.data_config["end_date"])
 #portfolio = Portfolio(stock_data.data_config)
-#portfolio.update_position(position)
+#portfolio.updateposition(position)
 
-strategy = AmStrategies(dcc_garch_model.mean_var, strat_config, _position)
+strategy = AmStrategies(dcc_garch_model.mean_var, strat_config, position)
 strategy.fit()
-print(strategy._position.next_weights)
-print(strategy._position.date)
+print(strategy.position.next_weights)
+print(strategy.position.date)

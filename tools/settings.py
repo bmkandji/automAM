@@ -2,58 +2,57 @@ import numpy as np
 from datetime import datetime
 from typing import Optional
 
-class _Position:
-    def __init__(self, capital: float, weights: np.ndarray, date: datetime, next_weights: Optional[np.ndarray] = None, horizon: int =None):
+class Position:
+    def __init__(self, capital: float, weights: np.ndarray, date: datetime, next_weights: Optional[np.ndarray] = None, horizon: Optional[int] = None):
         """
-        Initializes a new instance of the Position class.
+        Initializes a new instance of the Position class, representing a state of an investment portfolio at a given time.
 
         Args:
         capital (float): Initial capital amount.
         weights (np.ndarray): Initial weights for the assets in the portfolio, as a NumPy array.
-        date (datetime): The date of this position.
+        date (datetime): The date this position is applicable.
         next_weights (np.ndarray, optional): Planned next weights for the assets, as a NumPy array. Defaults to None.
+        horizon (int, optional): Investment horizon in days. Defaults to None.
         """
         self.capital = capital  # The amount of capital in the portfolio
-        self.weights = weights  # Asset allocation weights as a NumPy array
-        self.date = date  # The date corresponding to this position
-        self.next_weights = next_weights  # Future planned weights as a NumPy array
-        self.horizon = horizon
+        self.weights = weights  # Current asset allocation weights as a NumPy array
+        self.date = date  # The specific date for this position
+        self.next_weights = next_weights  # Future planned weights for asset reallocation
+        self.horizon = horizon  # The investment horizon associated with this position
 
     def update(self, next_weights: np.ndarray, horizon: int):
         """
-        Updates the planned next weights of the position.
+        Updates the next planned weights and investment horizon of the position.
 
         Args:
         next_weights (np.ndarray): New weights to be set as the next weights.
+        horizon (int): Updated investment horizon in days.
         """
         self.next_weights = next_weights  # Update the next_weights attribute to the new weights
-        self.horizon = horizon
+        self.horizon = horizon  # Update the investment horizon
 
 class Portfolio:
-    def __init__(self, pf_config: dict, _position: Optional[_Position] = None):
+    def __init__(self, pf_config: dict, position: Optional[Position] = None):
         """
-        Initializes a new instance of the Portfolio class.
+        Initializes a new instance of the Portfolio class, which manages positions and configurations.
 
         Args:
         pf_config (dict): Configuration of the portfolio, must include at least a 'symbols' key.
         position (Position, optional): Initial state of the portfolio. Defaults to None.
         """
         self.pf_config = pf_config  # Stores the portfolio configuration as an attribute
-        self._position = _position  # Initial position of the portfolio, can be None
+        self.position = position  # Initial position of the portfolio, can be None
 
-    def update_position(self, _position: _Position):
+    def update_position(self, position: Position):
         """
-        Updates the portfolio's position with the provided data. Verifies that the position
-        contains the same number of elements as the symbols in the portfolio configuration.
+        Updates the portfolio's current position with the provided new position. Checks if the new position's asset weights match the expected number of symbols.
 
         Args:
         position (Position): New position to update.
 
         Raises:
-        ValueError: If the number of elements in the position does not match the number of symbols.
+        ValueError: If the number of elements in the position's weights does not match the number of symbols in the portfolio configuration.
         """
-        # Checks if the number of elements in the new position matches the number of configured symbols
-        if _position.weights.shape[0] != len(self.pf_config["symbols"]):
+        if position.weights.shape[0] != len(self.pf_config["symbols"]):
             raise ValueError("The provided position does not match the expected number of assets.")
-
-        self._position = _position  # Updates the position with the new values
+        self.position = position  # Updates the position with the new values
