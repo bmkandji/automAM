@@ -14,4 +14,4 @@ class AmStrategies:
     def fit(self):
         arg = [self.mean_var["mean"], self.mean_var["covariance"],
               self.strat_config["aversion"], self.strat_config["fee_rate"],self.strat_config["bounds"], self.position.weights, self.position.capital]
-        self.position.update( mean_variance_portfolio(*arg), self.mean_var["n_ahead"])
+        self.position.update(mean_variance_portfolio(*arg), self.mean_var["n_ahead"])

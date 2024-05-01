@@ -149,13 +149,29 @@ class MeanVar_Model:
         means = np.array([np.array(vec).flatten() for vec in results.rx2('means')])
         covariances = np.array([np.array(vec) for vec in results.rx2('covariances')])
         self.mean_var = {
-                        "mean": compute_weights(means, scheme=self.model_config['model_config']["weights"]),
-                        "covariance": compute_weights(covariances, scheme=self.model_config['model_config']["weights"]),
-                        "date": self.data.data_config["end_date"],
-                        "n_ahead": n_ahead
+            "symbols": self.data.data_config["symbols"],
+            "mean": compute_weights(means, scheme=self.model_config['model_config']["weights"]),
+            "covariance": compute_weights(covariances, scheme=self.model_config['model_config']["weights"]),
+            "date": self.data.data_config["end_date"],
+            "n_ahead": n_ahead
                          }
 
-        return self.mean_var
+    def update(self, data: StockData):
+        """
+        Update the model with new data and re-run forecasts if applicable.
+
+        Parameters:
+        data (StockData): New stock data to update the model.
+
+        Raises:
+        ValueError: If the new data does not match the expected symbol configuration.
+        """
+        if self.data.data_config["symbols"] != data.data_config["symbols"]:
+            raise ValueError("The provided asset's data does not match the current assets.")
+        self.data.data_config = data.data_config
+        if self.mean_var is not None:
+            self.f_cast(self.mean_var["n_ahead"])
+
 
 
 # Usage example
