@@ -1,5 +1,3 @@
-import os
-import pandas as pd
 import numpy as np
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
@@ -8,6 +6,7 @@ from src.data_monitoring import StockData
 from src.rpy2_setup import setup_environment
 import utils.load_model as lo_m
 from common import compute_weights
+
 
 class DCCGARCHModel:
     def __init__(self, data: StockData, model_config: str):
@@ -27,16 +26,17 @@ class DCCGARCHModel:
         # This configuration contains paths, model specifications, and other necessary settings.
         self.model_config = lo_m.load_json_config(model_config)
         self.forecast = None
-        self.setup_environment()
+        self._setup_environment()
         self.define_r_functions()
 
-    def setup_environment(self):
+    def _setup_environment(self):
         """
         Set up the R environment by loading necessary libraries.
         This method assumes that 'setup_environment' from 'src.rpy2_setup' properly
         configures the R environment, including loading any required R packages.
         """
         setup_environment()
+
     def define_r_functions(self):
         """
         Define R functions necessary for DCC GARCH model analysis.
@@ -101,7 +101,7 @@ class DCCGARCHModel:
             }
         ''')
 
-    def _forecast(self, n_ahead: int = 5):
+    def f_cast(self, n_ahead: int = 5):
         """
         Perform forecasting using the defined DCC GARCH model.
 
@@ -151,6 +151,7 @@ class DCCGARCHModel:
 
         return self.forecast
 
+
 # Usage example
 data_config = 'C:/Users/MatarKANDJI/automAM/src/model_settings/stocks_settings.json'
 stock_data_manager = StockData(data_config)
@@ -159,5 +160,5 @@ print(stock_data_manager.data)  # Initial data
 
 model_info = 'C:/Users/MatarKANDJI/automAM/src/model_settings/stocks_settings.json'
 dcc_garch_model = DCCGARCHModel(stock_data_manager, model_info)
-forecast_results = dcc_garch_model._forecast()
+forecast_results = dcc_garch_model.f_cast()
 print(forecast_results)

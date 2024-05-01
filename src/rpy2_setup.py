@@ -3,6 +3,7 @@ import os
 import rpy2.robjects as ro
 import rpy2.rinterface_lib.callbacks as callbacks
 
+
 def custom_write_console(output):
     """
     Custom function to handle output from R to the Python console.
@@ -23,6 +24,7 @@ def custom_write_console(output):
 
     # Print a static warning about potential string decoding issues
     print("Warning: 'str' object has no attribute 'decode'")
+
 
 def setup_environment():
     """
@@ -49,6 +51,7 @@ def setup_environment():
 
     # Print a confirmation once the environment is set up successfully
     print("Environment setup complete.")
+
 
 # Check if the script is the main program and if so, call the setup_environment function
 if __name__ == "__main__":
