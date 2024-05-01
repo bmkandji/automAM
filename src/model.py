@@ -7,6 +7,7 @@ from rpy2.robjects.vectors import ListVector
 from src.data_monitoring import StockData
 from src.rpy2_setup import setup_environment
 import utils.load_model as lo_m
+from common import compute_weights
 
 class DCCGARCHModel:
     def __init__(self, data: StockData, model_config: str):
@@ -22,7 +23,9 @@ class DCCGARCHModel:
         and defining necessary R functions for DCC GARCH analysis.
         """
         self.data = data
-        self.model_config = model_config
+        # Load the JSON configuration for the model using a utility function.
+        # This configuration contains paths, model specifications, and other necessary settings.
+        self.model_config = lo_m.load_json_config(model_config)
         self.forecast = None
         self.setup_environment()
         self.define_r_functions()
@@ -111,9 +114,6 @@ class DCCGARCHModel:
         This method activates the interface between pandas and R, converts stock data to an R-compatible format,
         checks model availability, and executes the R forecasting function. The results are stored and returned.
         """
-        # Load the JSON configuration for the model using a utility function.
-        # This configuration contains paths, model specifications, and other necessary settings.
-        config = lo_m.load_json_config(self.model_config)
 
         # Activate the automatic conversion of pandas data structures to R data structures.
         # This is crucial for passing pandas DataFrame or Series objects directly to R functions.
@@ -125,17 +125,17 @@ class DCCGARCHModel:
 
         # Check if the symbols in the configuration match those in the data.
         # This is a form of validation to ensure that the data being processed is as expected.
-        model_available = set(config["symbols"]) == set(self.data.symbols)
+        model_available = set(self.model_config["symbols"]) == set(self.data.symbols)
 
         # Create an R list vector to hold the configuration parameters for the R function.
         # Each parameter is converted to the appropriate R type, such as using IntVector for integer arrays.
         model_config_vector = ListVector({
-            'model_path': config['model_config']['model_path'],  # Path to the model file.
-            'model': config['model_config']['model'],  # Model type, e.g., 'sGARCH'.
-            'armaOrder': ro.IntVector(config['model_config']['armaOrder']),  # ARMA order as an integer vector.
-            'dccOrder': ro.IntVector(config['model_config']['dccOrder']),  # DCC model order.
-            'distribution_garch': config['model_config']['distribution_garch'],  # GARCH distribution.
-            'distribution_dcc': config['model_config']['distribution_dcc']  # DCC distribution.
+            'model_path': self.model_config['model_config']['model_path'],  # Path to the model file.
+            'model': self.model_config['model_config']['model'],  # Model type, e.g., 'sGARCH'.
+            'armaOrder': ro.IntVector(self.model_config['model_config']['armaOrder']),  # ARMA order as an integer vector.
+            'dccOrder': ro.IntVector(self.model_config['model_config']['dccOrder']),  # DCC model order.
+            'distribution_garch': self.model_config['model_config']['distribution_garch'],  # GARCH distribution.
+            'distribution_dcc': self.model_config['model_config']['distribution_dcc']  # DCC distribution.
         })
 
         # Call the R function 'run_dcc_garch_and_forecast' with the necessary parameters.
@@ -144,8 +144,10 @@ class DCCGARCHModel:
 
         # Process the returned results from R, extracting means and covariances.
         # Convert them to numpy arrays for easier manipulation and use in Python.
-        self.forecast = {"means": [np.array(vec).flatten() for vec in results.rx2('means')],
-                         "covariances": [np.array(vec) for vec in results.rx2('covariances')]}
+        means = np.array([np.array(vec).flatten() for vec in results.rx2('means')])
+        covariances = np.array([np.array(vec) for vec in results.rx2('covariances')])
+        self.forecast = {"mean": compute_weights(means, scheme=self.model_config['model_config']["weights"]),
+                         "covariance": compute_weights(covariances, scheme=self.model_config['model_config']["weights"])}
 
         return self.forecast
 
