@@ -3,19 +3,20 @@ import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.vectors import ListVector
 from src.data_monitoring import StockData
-from src.rpy2_setup import setup_environment
+from src.strategies import AmStrategies
+from _setup.rpy2_setup import setup_environment
 import utils.load_model as lo_m
-from common import compute_weights
+from src.common import compute_weights
 
 
-class DCCGARCHModel:
+class MeanVar_Model:
     def __init__(self, data: StockData, model_config: str):
         """
         Initialize the DCC GARCH Model with necessary data and configurations.
 
         Parameters:
         data (StockData): The stock data manager containing market data.
-        model_info (str): Path to the model configuration file.
+        model_config (str): Path to the model configuration file.
 
         This method sets up the class by storing the stock data and model info,
         initializing the forecast to None, setting up the R environment,
@@ -25,7 +26,7 @@ class DCCGARCHModel:
         # Load the JSON configuration for the model using a utility function.
         # This configuration contains paths, model specifications, and other necessary settings.
         self.model_config = lo_m.load_json_config(model_config)
-        self.forecast = None
+        self.mean_var = None
         self._setup_environment()
         self.define_r_functions()
 
@@ -125,7 +126,7 @@ class DCCGARCHModel:
 
         # Check if the symbols in the configuration match those in the data.
         # This is a form of validation to ensure that the data being processed is as expected.
-        model_available = set(self.model_config["symbols"]) == set(self.data.symbols)
+        model_available = set(self.model_config["symbols"]) == set(self.data.data_config["symbols"])
 
         # Create an R list vector to hold the configuration parameters for the R function.
         # Each parameter is converted to the appropriate R type, such as using IntVector for integer arrays.
@@ -146,19 +147,33 @@ class DCCGARCHModel:
         # Convert them to numpy arrays for easier manipulation and use in Python.
         means = np.array([np.array(vec).flatten() for vec in results.rx2('means')])
         covariances = np.array([np.array(vec) for vec in results.rx2('covariances')])
-        self.forecast = {"mean": compute_weights(means, scheme=self.model_config['model_config']["weights"]),
-                         "covariance": compute_weights(covariances, scheme=self.model_config['model_config']["weights"])}
+        self.mean_var = {
+                         "mean": compute_weights(means, scheme=self.model_config['model_config']["weights"]),
+                         "covariance": compute_weights(covariances, scheme=self.model_config['model_config']["weights"])
+                         }
 
-        return self.forecast
+        return self.mean_var
 
 
 # Usage example
-data_config = 'C:/Users/MatarKANDJI/automAM/src/model_settings/stocks_settings.json'
+data_config = r'C:\Users\MatarKANDJI\automAM\src\data_settings\data_settings.json'
 stock_data_manager = StockData(data_config)
 stock_data_manager.fetch_data('2018-01-01', '2020-01-10')
 print(stock_data_manager.data)  # Initial data
 
-model_info = 'C:/Users/MatarKANDJI/automAM/src/model_settings/stocks_settings.json'
-dcc_garch_model = DCCGARCHModel(stock_data_manager, model_info)
+model_config = r'C:\Users\MatarKANDJI\automAM\src\model_settings\model_settings.json'
+dcc_garch_model = MeanVar_Model(stock_data_manager, model_config)
 forecast_results = dcc_garch_model.f_cast()
 print(forecast_results)
+
+strat_config = r'C:\Users\MatarKANDJI\automAM\src\strat_settings\strat_settings.json'
+n = len(dcc_garch_model.mean_var["mean"])
+weights = np.ones(n) / n
+position = {
+    "capital": 1,
+    "weights": weights,
+    "date": None,
+}
+strategy = AmStrategies(dcc_garch_model.mean_var, strat_config, position )
+strategy.fit()
+print(strategy._position)

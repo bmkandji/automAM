@@ -6,12 +6,12 @@ import utils.load_model as lo_m
 class StockData:
     def __init__(self, data_config: str):
         """
-        Initialize the StockData object with stock symbols.
+        Initialize the StockData object with stock config.
 
         Parameters:
-        symbols (list[str]): A list of stock symbols for fetching data.
+        data_config (str): Path to the data configuration file.
         """
-        self.symbols = lo_m.load_json_config(data_config)["symbols"]
+        self.data_config = lo_m.load_json_config(data_config)
         self.data = pd.DataFrame()
 
     def fetch_data(self, start_date: str, end_date: str) -> int:
@@ -28,7 +28,7 @@ class StockData:
         int: The number of new rows added to the DataFrame after processing.
         """
         new_data = pd.DataFrame()
-        for symbol in self.symbols:
+        for symbol in self.data_config["symbols"]:
             try:
                 # Fetch stock data from Yahoo Finance
                 stock_data = yf.download(symbol, start=start_date, end=end_date)
@@ -49,6 +49,7 @@ class StockData:
             initial_data_length = len(self.data)
             self.data = pd.concat([self.data, new_data]).drop_duplicates()
             self.replace_NA_with_rolling_mean()
+            self.data_config["end_date"] = self.data.index.max()
             new_data_length = len(self.data) - initial_data_length
             return new_data_length
 
@@ -70,6 +71,7 @@ class StockData:
         # Remove the same number of oldest rows as new rows added
         if len(self.data) > new_rows_added:
             self.data = self.data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
+            self.data_config["start_date"] = self.data.index.min()
 
     def replace_NA_with_rolling_mean(self, window: int = 5) -> None:
         """
@@ -89,7 +91,7 @@ class StockData:
 
 
 # Example usage
-data_config = 'C:/Users/MatarKANDJI/automAM/src/model_settings/stocks_settings.json'
+data_config = 'C:/Users/MatarKANDJI/automAM/src/data_settings/data_settings.json'
 stock_data_manager = StockData(data_config)
 stock_data_manager.fetch_data('2020-01-01', '2020-01-10')
 print(stock_data_manager.data)  # Print the initial data
@@ -97,3 +99,4 @@ print(stock_data_manager.data)  # Print the initial data
 # Update this data with new entries and manage the size
 stock_data_manager.update_data('2020-01-15')
 print(stock_data_manager.data)  # Print the updated data
+print(stock_data_manager.data_config)

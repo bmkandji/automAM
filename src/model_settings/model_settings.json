@@ -1,7 +1,7 @@
 {
     "symbols": ["AAPL", "MSFT", "GOOGL"],
     "model_config": {
-        "model_path": "C:/Users/MatarKANDJI/automAM/src/model_settings/stocks_dcc_spec_model.rds",
+        "model_path": "C:/Users/MatarKANDJI/automAM/src/model_settings/dcc_spec_model.rds",
         "model": "sGARCH",
         "armaOrder": [2, 1],
         "distribution_garch": "norm",
