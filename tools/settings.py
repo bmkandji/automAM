@@ -5,8 +5,8 @@ from src.data_monitoring import StockData
 
 
 class Position:
-    def __init__(self, capital: float, weights: np.ndarray, date: datetime,
-                 next_weights: Optional[np.ndarray] = None, horizon: Optional[int] = None):
+    def __init__(self, capital: float, weights: np.ndarray, date: datetime, horizon: datetime,
+                 next_weights: Optional[np.ndarray] = None):
         """
         Initializes a new instance of the Position class.
 
@@ -30,6 +30,7 @@ class Position:
         self._date = date
         self._next_weights = next_weights
         self._horizon = horizon
+        self._returns = None
 
     @property
     def capital(self) -> float:
@@ -52,31 +53,42 @@ class Position:
         return self._next_weights
 
     @property
-    def horizon(self) -> Optional[int]:
+    def horizon(self) -> datetime:
         """Returns the investment horizon in days."""
         return self._horizon
 
-    def update_nweights(self, next_weights: np.ndarray, horizon: int):
+    @property
+    def returns(self) -> np.ndarray:
+        """Returns the investment horizon in days."""
+        return self._returns
+
+    def update_nweights(self, next_weights: np.ndarray):
         """
         Updates both the next weights and the investment horizon. Validates both before updating.
 
         Args:
             next_weights (np.ndarray): New next weights, must sum to 1.
-            horizon (int): New investment horizon, must be a positive integer.
 
         Raises:
             ValueError: If the next weights do not sum to 1 or if the horizon is not a positive integer.
         """
         if not np.isclose(next_weights.sum(), 1):
             raise ValueError("Next weights must sum to 1.")
-        if horizon <= 0:
-            raise ValueError("Horizon must be a positive integer.")
 
         self._next_weights = next_weights
-        self._horizon = horizon
 
-        def update(self, next_weights: np.ndarray, horizon: int):
-            return 0
+    def update_returns(self, returns: np.ndarray):
+        if self.weights.shape[0] != returns.shape[0]:
+            raise ValueError("The provided returns does not match the expected number of assets.")
+        self._returns = returns
+
+    def update(self, new_horizon: datetime):
+        self._capital = 0 # fonction de calcule à definir
+        self._weights = self._next_weights
+        self._date = self._horizon
+        self._next_weights = None
+        self._horizon = new_horizon
+        self._returns = None
 
 class Portfolio:
     def __init__(self, pf_config: dict, position: Optional[Position] = None):
@@ -119,8 +131,8 @@ class Portfolio:
         """
         Updates the portfolio's risk metrics.
         """
-        if 'mean' not in risk or 'covariance' not in risk or "horizon" not in risk:
-            raise ValueError("Risk metrics must include 'mean' and 'covariance' and 'horizon'.")
+        if 'mean' not in risk or 'covariance' not in risk:
+            raise ValueError("Risk metrics must include 'mean' and 'covariance'.")
         if risk['mean'].shape[0] != len(self._pf_config["symbols"]):
             raise ValueError("Risk 'mean' does not match the number of portfolio assets.")
         self._risk_metric = risk

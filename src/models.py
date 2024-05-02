@@ -5,7 +5,6 @@ from rpy2.robjects import pandas2ri
 from rpy2.robjects.vectors import ListVector
 from src.data_monitoring import StockData
 from _setup.rpy2_setup import setup_environment
-import utils.load_model as lo_m
 from src.common import compute_weights
 from tools.settings import Portfolio
 
@@ -107,7 +106,7 @@ class MeanVar_Model:
         """Returns the model configuration loaded from the file."""
         return self._model_config
 
-    def fit_fcast(self, portfolio: Portfolio, data: StockData, horizon: int):
+    def fit_fcast(self, portfolio: Portfolio, data: StockData):
         """
         Perform forecasting using the defined DCC GARCH model.
 
@@ -147,9 +146,10 @@ class MeanVar_Model:
             'distribution_garch': self.model_config['model_config']['distribution_garch'],  # GARCH distribution.
             'distribution_dcc': self.model_config['model_config']['distribution_dcc']  # DCC distribution.
         })
+        n_ahead = (portfolio.position.horizon - portfolio.position.date).days
         # Call the R function 'run_dcc_garch_and_forecast' with the necessary parameters.
         # This function is expected to perform GARCH modeling and forecasting.
-        results = ro.globalenv['run_dcc_garch_and_forecast'](r_returns, model_config_vector, horizon, model_available)
+        results = ro.globalenv['run_dcc_garch_and_forecast'](r_returns, model_config_vector, n_ahead, model_available)
 
         # Process the returned results from R, extracting means and covariances.
         # Convert them to numpy arrays for easier manipulation and use in Python.
@@ -157,7 +157,6 @@ class MeanVar_Model:
         covariances = np.array([np.array(vec) for vec in results.rx2('covariances')])
         mean_var = {
             "mean": compute_weights(means, scheme=self._model_config['model_config']["weights"]),
-            "covariance": compute_weights(covariances, scheme=self._model_config['model_config']["weights"]),
-            "horizon": horizon
+            "covariance": compute_weights(covariances, scheme=self._model_config['model_config']["weights"])
         }
         portfolio.update_risk(mean_var)

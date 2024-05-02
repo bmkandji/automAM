@@ -1,6 +1,6 @@
 import pandas as pd
 import yfinance as yf
-from datetime import datetime, timedelta
+from datetime import datetime
 from src.common import compute_log_returns
 
 class StockData:
@@ -14,7 +14,7 @@ class StockData:
         self.data_config = data_config
         self.data = pd.DataFrame()
 
-    def fetch_data(self, start_date: str, end_date: str) -> int:
+    def fetch_data(self, start_date: datetime, end_date: datetime) -> int:
         """
         Fetches the daily closing prices for a list of stock symbols over a specified date range, calculates log returns,
         applies a rolling mean to handle NA values, and appends the data to the internal DataFrame. This method ensures that
@@ -55,7 +55,7 @@ class StockData:
 
         return 0
 
-    def update_data(self, new_end_date: str = None):
+    def update_data(self, new_end_date: datetime = None):
         """
         Updates the internal DataFrame by fetching new data from the day after the last recorded end date to a new end date,
         and removes an equal number of old data rows from the start.
