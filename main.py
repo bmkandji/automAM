@@ -3,7 +3,7 @@ from src.data_monitoring import StockData
 from src.strategies import AmStrategies
 from src.models import MeanVar_Model
 from tools.settings import Portfolio, Position
-from  utils.load_model import load_json_config
+from utils.load_model import load_json_config
 
 
 # Usage example
@@ -22,7 +22,7 @@ portfolio = Portfolio(pf_config)
 portfolio.update_position(position)
 
 #model
-horizon =5
+horizon = 5
 model_config = load_json_config(r'C:\Users\MatarKANDJI\automAM\src\model_settings\model_settings.json')
 dcc_garch_model = MeanVar_Model(model_config)
 dcc_garch_model.fit_fcast(portfolio, stock_data, horizon)

@@ -1,4 +1,3 @@
-import utils.load_model as lo_m  # Importe la fonction de chargement de configuration à partir d'un fichier JSON
 from utils.portfolio_tools import mean_variance_portfolio  # Importe la fonction d'algorithme d'optimisation
 from tools.settings import Portfolio  # Importe la classe Position depuis les paramètres d'outils
 
@@ -29,4 +28,4 @@ class AmStrategies:
                self.strat_config["aversion"], self.strat_config["fee_rate"], self.strat_config["bounds"], portfolio.position.weights,
                portfolio.position.capital]
         # Exécute l'algorithme d'optimisation pour ajuster la position
-        portfolio.position.update(mean_variance_portfolio(*arg), portfolio.risk_metric["horizon"])
+        portfolio.position.update_nweights(mean_variance_portfolio(*arg), portfolio.risk_metric["horizon"])

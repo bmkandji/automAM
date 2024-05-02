@@ -121,7 +121,7 @@ class MeanVar_Model:
         checks model availability, and executes the R forecasting function. The results are stored and returned.
         """
         if not (set(portfolio.pf_config["symbols"]) == set(data.data_config["symbols"]) == set(
-                self._model_config["symbols"])) or portfolio.position._date != data.data_config["end_date"]:
+                self._model_config["symbols"])) or portfolio.position.date != data.data_config["end_date"]:
             raise ValueError("Configuration mismatch: symbol sets or dates do not align.")
 
         # Activate the automatic conversion of pandas data structures to R data structures.

@@ -1,6 +1,7 @@
 import numpy as np
 from datetime import datetime
 from typing import Optional
+from src.data_monitoring import StockData
 
 
 class Position:
@@ -55,7 +56,7 @@ class Position:
         """Returns the investment horizon in days."""
         return self._horizon
 
-    def update(self, next_weights: np.ndarray, horizon: int):
+    def update_nweights(self, next_weights: np.ndarray, horizon: int):
         """
         Updates both the next weights and the investment horizon. Validates both before updating.
 
@@ -73,6 +74,9 @@ class Position:
 
         self._next_weights = next_weights
         self._horizon = horizon
+
+        def update(self, next_weights: np.ndarray, horizon: int):
+            return 0
 
 class Portfolio:
     def __init__(self, pf_config: dict, position: Optional[Position] = None):
@@ -120,3 +124,6 @@ class Portfolio:
         if risk['mean'].shape[0] != len(self._pf_config["symbols"]):
             raise ValueError("Risk 'mean' does not match the number of portfolio assets.")
         self._risk_metric = risk
+
+    def update(self, data: StockData):
+        return None
