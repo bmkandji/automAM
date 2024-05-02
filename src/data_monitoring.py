@@ -2,16 +2,16 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime, timedelta
 from src.common import compute_log_returns
-import utils.load_model as lo_m
+
 class StockData:
-    def __init__(self, data_config: str):
+    def __init__(self, data_config: dict):
         """
         Initialize the StockData object with stock config.
 
         Parameters:
         data_config (str): Path to the data configuration file.
         """
-        self.data_config = lo_m.load_json_config(data_config)
+        self.data_config = data_config
         self.data = pd.DataFrame()
 
     def fetch_data(self, start_date: str, end_date: str) -> int:
@@ -48,7 +48,7 @@ class StockData:
             new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close'))
             initial_data_length = len(self.data)
             self.data = pd.concat([self.data, new_data]).drop_duplicates()
-            self.replace_NA_with_rolling_mean()
+            self.replace_NA()
             self.data_config["end_date"] = self.data.index.max()
             new_data_length = len(self.data) - initial_data_length
             return new_data_length
@@ -73,7 +73,7 @@ class StockData:
             self.data = self.data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
             self.data_config["start_date"] = self.data.index.min()
 
-    def replace_NA_with_rolling_mean(self, window: int = 5) -> None:
+    def replace_NA(self, window: int = 5) -> None:
         """
         Replaces NA values in the DataFrame with the rolling mean calculated over a specified window size.
 
@@ -81,23 +81,7 @@ class StockData:
         window (int): The size of the rolling window to calculate the means, default is 5.
         """
         # Calculate the rolling mean with a specified window, minimum number of observations in the window required to have a value is 1
-        roll_means = self.data.rolling(window=window, min_periods=1, center=False).mean()
+        roll_means = self.data.rolling(window=window, min_periods=1, center=True).mean()
 
         # Replace NA values in the DataFrame with the calculated rolling means
         self.data.fillna(roll_means, inplace=True)
-
-
-
-
-'''
-# Example usage
-data_config = 'C:/Users/MatarKANDJI/automAM/src/data_settings/data_settings.json'
-stock_data_manager = StockData(data_config)
-stock_data_manager.fetch_data('2020-01-01', '2020-01-10')
-print(stock_data_manager.data)  # Print the initial data
-
-# Update this data with new entries and manage the size
-stock_data_manager.update_data('2020-01-15')
-print(stock_data_manager.data)  # Print the updated data
-print(stock_data_manager.data_config)
-'''
