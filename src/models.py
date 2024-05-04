@@ -3,19 +3,21 @@ import os
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.vectors import ListVector
-from src.data_monitoring import StockData
+from src.data_mn import Data
 from _setup.rpy2_setup import setup_environment
-from src.common import compute_weights
-from tools.settings import Portfolio
+from src.common import weighting
+from datetime import datetime
+from utils.check import check_configs
+from src.abstract import _Model
 
 
-class MeanVar_Model:
+class Model(_Model):
     def __init__(self, model_config: dict):
         """
         Initialize the DCC GARCH Model with necessary data and configurations.
 
         Parameters:
-        data (StockData): The stock data manager containing market data.
+        data (Data): The stock data manager containing market data.
         model_config (str): Path to the model configuration file.
 
         This method sets up the class by storing the stock data and model info,
@@ -25,11 +27,13 @@ class MeanVar_Model:
 
         # Load the JSON configuration for the model using a utility function.
         # This configuration contains paths, model specifications, and other necessary settings.
-        self._model_config = model_config
+        super().__init__(model_config)
+        self._metrics: dict = {"fit_date": None}
         self.stp_environment()
         self.define_r_functions()
 
-    def stp_environment(self):
+    @staticmethod
+    def stp_environment():
         """
         Set up the R environment by loading necessary libraries.
         This method assumes that 'setup_environment' from 'src.rpy2_setup' properly
@@ -37,7 +41,8 @@ class MeanVar_Model:
         """
         setup_environment()
 
-    def define_r_functions(self):
+    @staticmethod
+    def define_r_functions():
         """
         Define R functions necessary for DCC GARCH model analysis.
         This includes the R function for executing the model fitting and forecasting.
@@ -101,12 +106,7 @@ class MeanVar_Model:
             }
         ''')
 
-    @property
-    def model_config(self) -> dict:
-        """Returns the model configuration loaded from the file."""
-        return self._model_config
-
-    def fit_fcast(self, portfolio: Portfolio, data: StockData):
+    def fit_fcast(self, data: Data, horizon: datetime):
         """
         Perform forecasting using the defined DCC GARCH model.
 
@@ -119,9 +119,8 @@ class MeanVar_Model:
         This method activates the interface between pandas and R, converts stock data to an R-compatible format,
         checks model availability, and executes the R forecasting function. The results are stored and returned.
         """
-        if not (set(portfolio.pf_config["symbols"]) == set(data.data_config["symbols"]) == set(
-                self._model_config["symbols"])) or portfolio.position.date != data.data_config["end_date"]:
-            raise ValueError("Configuration mismatch: symbol sets or dates do not align.")
+
+        check_configs(data=data, model=self, check_date=False)
 
         # Activate the automatic conversion of pandas data structures to R data structures.
         # This is crucial for passing pandas DataFrame or Series objects directly to R functions.
@@ -146,7 +145,7 @@ class MeanVar_Model:
             'distribution_garch': self.model_config['model_config']['distribution_garch'],  # GARCH distribution.
             'distribution_dcc': self.model_config['model_config']['distribution_dcc']  # DCC distribution.
         })
-        n_ahead = (portfolio.position.horizon - portfolio.position.date).days
+        n_ahead = (horizon - data.data_config["end_date"]).days
         # Call the R function 'run_dcc_garch_and_forecast' with the necessary parameters.
         # This function is expected to perform GARCH modeling and forecasting.
         results = ro.globalenv['run_dcc_garch_and_forecast'](r_returns, model_config_vector, n_ahead, model_available)
@@ -155,8 +154,10 @@ class MeanVar_Model:
         # Convert them to numpy arrays for easier manipulation and use in Python.
         means = np.array([np.array(vec).flatten() for vec in results.rx2('means')])
         covariances = np.array([np.array(vec) for vec in results.rx2('covariances')])
-        mean_var = {
-            "mean": compute_weights(means, scheme=self._model_config['model_config']["weights"]),
-            "covariance": compute_weights(covariances, scheme=self._model_config['model_config']["weights"])
+        metrics = {
+            "fit_date": data.data_config["end_date"],
+            "mean": weighting(means, scheme=self._model_config['model_config']["weights"]),
+            "covariance": weighting(covariances, scheme=self._model_config['model_config']["weights"])
         }
-        portfolio.update_risk(mean_var)
+        self._metrics = metrics
+        data.update_metrics(self)

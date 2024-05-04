@@ -2,23 +2,24 @@ import pandas as pd
 import yfinance as yf
 from datetime import datetime
 from src.common import compute_log_returns
+from src.abstract import _Data
 
-class StockData:
+class Data(_Data):
     def __init__(self, data_config: dict):
         """
-        Initialize the StockData object with stock config.
+        Initialize the Data object with stock config.
 
         Parameters:
         data_config (str): Path to the data configuration file.
         """
-        self.data_config = data_config
-        self.data = pd.DataFrame()
+        super().__init__(data_config)
+        self.data: pd.DataFrame = pd.DataFrame()
 
     def fetch_data(self, start_date: datetime, end_date: datetime) -> int:
         """
         Fetches the daily closing prices for a list of stock symbols over a specified date range, calculates log returns,
-        applies a rolling mean to handle NA values, and appends the data to the internal DataFrame. This method ensures that
-        the end date specified is inclusive by adjusting the date range internally.
+        applies a rolling mean to handle NA values, and appends the data to the internal DataFrame. This method ensures
+         that the end date specified is inclusive by adjusting the date range internally.
 
         Parameters:
         start_date (str): The starting date of the period (format: 'YYYY-MM-DD').
@@ -57,11 +58,12 @@ class StockData:
 
     def update_data(self, new_end_date: datetime = None):
         """
-        Updates the internal DataFrame by fetching new data from the day after the last recorded end date to a new end date,
-        and removes an equal number of old data rows from the start.
+        Updates the internal DataFrame by fetching new data from the day after the last recorded end date to a new end
+        date, and removes an equal number of old data rows from the start.
 
         Parameters:
-        new_end_date (str, optional): The end date for the new data fetch (format: 'YYYY-MM-DD'). Defaults to today's date.
+        new_end_date (str, optional): The end date for the new data fetch (format: 'YYYY-MM-DD'). Defaults to today's
+        date.
         """
         if new_end_date is None:
             new_end_date = datetime.today().strftime('%Y-%m-%d')
@@ -80,7 +82,8 @@ class StockData:
         Parameters:
         window (int): The size of the rolling window to calculate the means, default is 5.
         """
-        # Calculate the rolling mean with a specified window, minimum number of observations in the window required to have a value is 1
+        # Calculate the rolling mean with a specified window, minimum number of observations in the window required
+        # to have a value is 1
         roll_means = self.data.rolling(window=window, min_periods=1, center=True).mean()
 
         # Replace NA values in the DataFrame with the calculated rolling means

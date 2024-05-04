@@ -21,7 +21,7 @@ def compute_log_returns(df: pd.DataFrame, scale: float = 100) -> pd.DataFrame:
 
 
 
-def compute_weights(data: np.ndarray, scheme: str = 'uniform', **kwargs: Any) -> np.ndarray:
+def weighting(data: np.ndarray, scheme: str = 'uniform', **kwargs: Any) -> np.ndarray:
     """
     Computes weighted sums of data rows based on the specified weighting scheme.
 

@@ -1,11 +1,11 @@
 from utils.portfolio_tools import mean_variance_portfolio  # Importe la fonction d'algorithme d'optimisation
-from tools.settings import Portfolio  # Importe la classe Position depuis les paramètres d'outils
+from src.portfolio import Portfolio  # Importe la classe Position depuis les paramètres d'outils
+from src.abstract import _Strategies
 
-
-class AmStrategies:
+class Strategies(_Strategies):
     def __init__(self, strat_config: dict):
         """
-        Initialise une instance de la classe AmStrategies avec les paramètres donnés.
+        Initialise une instance de la classe Strategies avec les paramètres donnés.
 
         Paramètres :
         mean_var (dict) : Dictionnaire contenant les données sur les moyennes et variances.
@@ -15,11 +15,8 @@ class AmStrategies:
         Cette méthode initialise la classe en chargeant la configuration de la stratégie à partir d'un fichier,
         et en initialisant les données sur les moyennes et variances ainsi que l'objet de position.
         """
-        self._strat_config = strat_config  # Charge la configuration de la stratégie depuis un fichier JSON
+        super().__init__(strat_config)
 
-    @property
-    def strat_config(self) -> dict:
-        return self._strat_config
 
     def fit(self, portfolio: Portfolio):
         """
@@ -29,7 +26,7 @@ class AmStrategies:
         pour exécuter un algorithme d'optimisation et ajuster la position en conséquence.
         """
         # Prépare les arguments nécessaires pour l'algorithme d'optimisation
-        arg = [portfolio.risk_metric["mean"], portfolio.risk_metric["covariance"],
+        arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
                self.strat_config["aversion"], self.strat_config["fee_rate"], self.strat_config["bounds"],
                portfolio.position.weights, portfolio.position.capital]
         # Exécute l'algorithme d'optimisation pour ajuster la position
