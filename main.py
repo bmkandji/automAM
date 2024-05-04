@@ -50,6 +50,6 @@ data.update_data(next_horizon)
 portfolio.observed_returns(data)
 print(portfolio.returns)
 
-new_horizon = datetime(2024, 1, 31)
+new_horizon = datetime(2024, 2, 3)
 portfolio.forward(new_horizon)
 print(portfolio.capital)

@@ -135,6 +135,8 @@ class Portfolio(Position):
         self._returns = data.window_returns(self.date, self.horizon)
 
     def forward(self, new_horizon: datetime):
+        if new_horizon <= self.horizon:
+            raise ValueError("The new horizon must be later than the actual horizon")
         if "fee_rate" not in self.strategies:
             raise ValueError("The portfolio is not yet fitted by strategies")
         if self._returns is None:
