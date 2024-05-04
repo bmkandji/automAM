@@ -5,7 +5,7 @@ This project aims to automate asset management tasks using a combination of R an
 
 ## Prerequisites
 
-- Python 3.12.0 or higher
+- Python 3.12.0
 - R (recommended version: 4.3.1)
 - 
 ## Features

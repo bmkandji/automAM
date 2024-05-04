@@ -4,7 +4,7 @@ import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.vectors import ListVector
 from src.data_mn import Data
-from _setup.rpy2_setup import setup_environment
+from settings.rpy2_setup import setup_environment
 from src.common import weighting
 from datetime import datetime
 from src.abstract import _Model
