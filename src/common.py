@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from typing import Any, Optional
+from typing import Any
 
 
 def compute_log_returns(df: pd.DataFrame, scale: float = 100) -> pd.DataFrame:
