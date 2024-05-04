@@ -28,7 +28,6 @@ class Model(_Model):
         # Load the JSON configuration for the model using a utility function.
         # This configuration contains paths, model specifications, and other necessary settings.
         super().__init__(model_config)
-        self._metrics: dict = {"fit_date": None}
         self.stp_environment()
         self.define_r_functions()
 
@@ -120,8 +119,6 @@ class Model(_Model):
         checks model availability, and executes the R forecasting function. The results are stored and returned.
         """
 
-        check_configs(data=data, model=self, check_date=False)
-
         # Activate the automatic conversion of pandas data structures to R data structures.
         # This is crucial for passing pandas DataFrame or Series objects directly to R functions.
         pandas2ri.activate()
@@ -159,5 +156,6 @@ class Model(_Model):
             "mean": weighting(means, scheme=self._model_config['model_config']["weights"]),
             "covariance": weighting(covariances, scheme=self._model_config['model_config']["weights"])
         }
+        # to take out of the if/else, if 2 model or plus
         self._metrics = metrics
         data.update_metrics(self)

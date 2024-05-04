@@ -4,12 +4,14 @@ from typing import Dict, Any
 from datetime import datetime
 from utils.check import check_configs  # Importation des utilitaires nécessaires
 
+
 # Définition de la classe abstraite _Model
 class _Model(ABC):
     def __init__(self, model_config: Dict[str, Any]) -> None:
         # Initialisation avec une configuration du modèle, stockée dans un dictionnaire
         self._model_config: Dict[str, Any] = model_config
-        self._metrics: Dict[str, Any] = {}  # Dictionnaire pour stocker les métriques associées au modèle
+        self._metrics: Dict[str, Any] = {
+            "fit_date": None}  # Dictionnaire pour stocker les métriques associées au modèle
 
     @property
     def model_config(self) -> Dict[str, Any]:
@@ -27,7 +29,11 @@ class _Model(ABC):
         Méthode abstraite pour ajuster le modèle à des données et prédire jusqu'à un certain horizon.
         Doit être implémentée par des sous-classes spécifiques.
         """
+        check_configs(data=data, model=self, check_date=False)
+        if self.metrics["fit_date"] and self.metrics["fit_date"] > data.data_config["end_date"]:
+            raise ValueError("Please use recent data.")
         pass
+
 
 # Définition de la classe abstraite _Data
 class _Data(ABC):
@@ -69,9 +75,10 @@ class _Data(ABC):
         """
         check_configs(data=self, model=model)  # Validation des configurations
         self._metrics = {
-            "model": model.model_config['model_config'],
+            "model": model.model_config['model_config'],  # à ajuster en cas de plusieur types de model
             **model.metrics  # Intégration des métriques du modèle aux métriques des données
         }
+
 
 # Définition de la classe abstraite _Strategies
 class _Strategies(ABC):

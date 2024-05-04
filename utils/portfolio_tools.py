@@ -116,7 +116,7 @@ def portfolio_volatility(asset_weights: np.ndarray, covariance_matrix: np.ndarra
 
 
 
-def sum_to_one_constraint(weights):
+def sum_to_one_constraint(weights: np.ndarray):
     """
     Constraint function for the optimization that ensures the sum of the weights equals 1.
     This is necessary for the portfolio to represent a complete allocation of capital.
@@ -130,8 +130,8 @@ def sum_to_one_constraint(weights):
     return np.sum(weights) - 1
 
 
-def mv_portfolio_objective(weights, expected_returns, covariance_matrix, risk_aversion_factor,
-                           transaction_fee_rate, current_weights, initial_capital):
+def mv_portfolio_objective(weights: np.ndarray, expected_returns: np.ndarray, covariance_matrix: np.ndarray, risk_aversion_factor: float,
+                           transaction_fee_rate: float, current_weights: np.ndarray, initial_capital: float) -> float:
     """
     Objective function for the portfolio optimization that calculates the negative of the adjusted portfolio return.
     This is designed for minimization in an optimizer to maximize the original function.
@@ -157,8 +157,9 @@ def mv_portfolio_objective(weights, expected_returns, covariance_matrix, risk_av
     return -(pf_return - initial_capital * risk_aversion_factor * 0.5 * pf_variance - tr_costs)
 
 
-def mean_variance_portfolio(expected_returns, covariance_matrix, risk_aversion_factor,
-                            transaction_fee_rate, bounds, current_weights, initial_capital=1.0):
+def mean_variance_portfolio(expected_returns: np.ndarray, covariance_matrix: np.ndarray, risk_aversion_factor: float,
+                            transaction_fee_rate: float, bounds: list, current_weights: np.ndarray,
+                            initial_capital: float = 1.0) -> np.ndarray:
     """
     Optimizes portfolio using a mean-variance approach including transaction costs.
 
@@ -174,6 +175,7 @@ def mean_variance_portfolio(expected_returns, covariance_matrix, risk_aversion_f
     Returns:
     - np.ndarray: The optimized weights for the portfolio.
     """
+
     num_assets = expected_returns.shape[0]
     # Ensure bounds are repeated for each asset correctly
     bounds = [tuple(bounds)] * num_assets  # Apply the same bounds to all assets if a single bound is given

@@ -140,7 +140,7 @@ class Portfolio(Position):
         if "model" not in self.metrics:
             raise ValueError("The portfolio metrics is empty, please update with trained data")
         strategies.fit(self)
-        self.strategies = strategies.strat_config
+        self.strategies = strategies.strat_config # à ajuster en cas de plusieur strategies
 
     def forward(self, data: Data):
         return None
