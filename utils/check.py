@@ -33,7 +33,7 @@ def check_configs(portfolio=None, data=None, model=None, check_date=True):
     # Check date alignment among all configurations if check_date is True
     if check_date:
         # Prepare date values from each provided configuration
-        portfolio_date = portfolio.position.date if portfolio else None
+        portfolio_date = portfolio.date if portfolio else None
         data_date = data.data_config.get("end_date") if data else None
         model_date = model.metrics.get("fit_date") if model else None
         # Collect non-None dates

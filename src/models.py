@@ -126,7 +126,7 @@ class Model(_Model):
         # This is crucial for passing pandas DataFrame or Series objects directly to R functions.
         pandas2ri.activate()
 
-        # Convert the DataFrame stored in 'self._data.data' to an R data.frame using rpy2's conversion.
+        # Convert the DataFrame stored in 'data.data' to an R data.frame using rpy2's conversion.
         # This is necessary because R functions expect data in R data.frame format.
         r_returns = pandas2ri.py2rpy(data.data)
 

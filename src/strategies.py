@@ -28,8 +28,6 @@ class Strategies(_Strategies):
         # Prépare les arguments nécessaires pour l'algorithme d'optimisation
         arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
                self.strat_config["aversion"], self.strat_config["fee_rate"], self.strat_config["bounds"],
-               portfolio.position.weights, portfolio.position.capital]
+               portfolio.weights, portfolio.capital]
         # Exécute l'algorithme d'optimisation pour ajuster la position
-        portfolio.position.update_nweights(mean_variance_portfolio(*arg))
-        # risk_metric = portfolio.risk_metric.update({"strat_config": self._strat_config})
-        # portfolio.update_risk(risk_metric)
+        portfolio.update_nweights(mean_variance_portfolio(*arg))
