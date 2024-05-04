@@ -112,7 +112,7 @@ def transaction_costs(weights: np.ndarray, current_weights: np.ndarray, transact
     return initial_capital * transaction_fee_rate * np.sum(np.abs(weights - current_weights))
 
 
-def fw_portfolio_value(asset_weights: np.ndarray, expected_returns: np.ndarray,
+def fw_portfolio_value(asset_weights: np.ndarray, returns: np.ndarray,
                        initial_capital: float = 1, scale: float = 100) -> float:
     """
     Calculate the final value of a portfolio based on the asset weights, expected returns,
@@ -121,7 +121,7 @@ def fw_portfolio_value(asset_weights: np.ndarray, expected_returns: np.ndarray,
     Parameters:
     - asset_weights (np.ndarray): An array of weights for each asset in the portfolio,
                                   where each weight is a fraction of the total investment.
-    - expected_returns (np.ndarray): An array of expected logarithmic returns for each asset over the period considered.
+    - returns (np.ndarray): An array of observed logarithmic returns for each asset over the period considered.
     - initial_capital (float, optional): The total initial capital invested in the portfolio, default is 1.
 
     Returns:
@@ -133,11 +133,11 @@ def fw_portfolio_value(asset_weights: np.ndarray, expected_returns: np.ndarray,
     """
 
     # Validate input lengths
-    if len(asset_weights) != len(expected_returns):
+    if len(asset_weights) != len(returns):
         raise ValueError("Asset weights and expected returns must have the same length.")
 
     # Calculate growth factors from expected logarithmic returns
-    growth_factors = np.exp(expected_returns/scale)
+    growth_factors = np.exp(returns/scale)
 
     return np.sum(initial_capital * asset_weights * growth_factors)
 

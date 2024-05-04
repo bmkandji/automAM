@@ -5,6 +5,7 @@ from datetime import datetime
 from src.common import compute_log_returns
 from src.abstract import _Data
 
+
 class Data(_Data):
     def __init__(self, data_config: dict):
         """
@@ -14,7 +15,6 @@ class Data(_Data):
         data_config (str): Path to the data configuration file.
         """
         super().__init__(data_config)
-
 
     def fetch_data(self, start_date: datetime, end_date: datetime) -> int:
         """
