@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, Any
 from typing import Optional
 from src.abstract import _Data, _Strategies
-from utils.check import check_configs
+from utils.check import check_configs, checks_weight
 from abc import ABC
 from utils import portfolio_tools as pf_t
 
@@ -24,13 +24,13 @@ class Position(ABC):
         """
         if capital <= 0:
             raise ValueError("Capital must be greater than zero.")
-        if not np.isclose(weights.sum(), 1):
-            raise ValueError("Weights must sum to 1.")
+
+        checks_weight(weights)
 
         self._capital = capital
         self._weights = weights
         self._date = date
-        self._next_weights: np.ndarray = None
+        self._opti_next_weights: np.ndarray = None
         self._horizon = horizon
 
     @property
@@ -49,9 +49,9 @@ class Position(ABC):
         return self._date
 
     @property
-    def next_weights(self) -> Optional[np.ndarray]:
+    def opti_next_weights(self) -> Optional[np.ndarray]:
         """Returns the next planned weights for asset allocation."""
-        return self._next_weights
+        return self._opti_next_weights
 
     @property
     def horizon(self) -> datetime:
@@ -63,20 +63,19 @@ class Position(ABC):
         """Returns the investment horizon in days."""
         return self.returns
 
-    def update_nweights(self, next_weights: np.ndarray):
+    def update_opti_nweights(self, opti_next_weights: np.ndarray):
         """
         Updates both the next weights and the investment horizon. Validates both before updating.
 
         Args:
-            next_weights (np.ndarray): New next weights, must sum to 1.
+            opti_next_weights (np.ndarray): New next weights, must sum to 1.
 
         Raises:
             ValueError: If the next weights do not sum to 1 or if the horizon is not a positive integer.
         """
-        if not np.isclose(next_weights.sum(), 1):
-            raise ValueError("Next weights must sum to 1.")
 
-        self._next_weights = next_weights
+        checks_weight(opti_next_weights)
+        self._opti_next_weights = opti_next_weights
 
 
 class Portfolio(Position):
@@ -91,10 +90,14 @@ class Portfolio(Position):
         super().__init__(capital, weights, date, horizon)
         if len(pf_config["symbols"]) != weights.shape[0]:
             raise ValueError("weights does not match the number of portfolio assets.")
+        pf_config["ref_portfolios"] = {key: np.array(value) for key, value in pf_config['ref_portfolios'].items()}
         self._pf_config: Dict[str, Any] = pf_config
         self._strategies: dict = {}
         self._metrics: Dict[str, Any] = {}
         self._returns: np.ndarray = None
+        self._right_next_weight = None
+        self._refAsset_capital = {key: capital for key in pf_config["ref_portfolios"].keys()}
+
 
     @property
     def pf_config(self) -> Dict[str, Any]:
@@ -109,8 +112,17 @@ class Portfolio(Position):
         return self._strategies
 
     @property
-    def returns(self) -> Dict[str, Any]:
+    def returns(self) -> np.ndarray:
         return self._returns
+
+    @property
+    def right_next_weight(self) -> Optional[np.ndarray]:
+        """Returns the next planned weights for asset allocation."""
+        return self._right_next_weight
+
+    @property
+    def refAsset_capital(self) -> Dict[str, float]:
+        return self._refAsset_capital
 
     def update_metrics(self, data: _Data) -> None:
         """
@@ -126,7 +138,7 @@ class Portfolio(Position):
         if "model" not in self.metrics:
             raise ValueError("The portfolio metrics is empty, please update with trained data")
         strategies.fit(self)
-        self._strategies = strategies.strat_config  # à ajuster en cas de plusieur strategies
+        self._strategies = strategies.strat_config # à ajuster en cas de plusieur strategies
 
     def observed_returns(self, data: _Data):
         check_configs(portfolio=self, data=data, check_date=False)
@@ -134,20 +146,36 @@ class Portfolio(Position):
             raise ValueError("Data do not cover the portfolio zone")
         self._returns = data.window_returns(self.date, self.horizon)
 
-    def forward(self, new_horizon: datetime):
+    def forward(self, new_horizon: datetime, right_next_weight: np.ndarray = None, update_ref_pf: bool = True):
         if new_horizon <= self.horizon:
             raise ValueError("The new horizon must be later than the actual horizon")
         if "fee_rate" not in self.strategies:
             raise ValueError("The portfolio is not yet fitted by strategies")
         if self._returns is None:
             raise ValueError("The portfolio's observed returns is not yet updated by observed data:_Data")
+        if right_next_weight:
+            checks_weight(right_next_weight)
+            self._opti_next_weights = right_next_weight
 
-        past_capital = pf_t.capital_fw(self.next_weights, self.weights, self.strategies["fee_rate"], self.capital)
-        self._capital = pf_t.fw_portfolio_value(self.next_weights, self.returns, past_capital, self.metrics["scale"])
-        self._weights = self.next_weights
+        past_capital = pf_t.capital_fw(self.opti_next_weights, self.weights, self.strategies["fee_rate"], self.capital)
+        self._capital = pf_t.fw_portfolio_value(self.opti_next_weights, self.returns, past_capital, self.metrics["scale"])
+        self._weights = self.opti_next_weights
         self._date = self.horizon
         self._horizon = new_horizon
+
+        if update_ref_pf:
+            self._refAsset_capital = {
+                key: pf_t.fw_portfolio_value(
+                    self.pf_config["ref_portfolios"][key],
+                    self.returns,
+                    capital,
+                    self.metrics["scale"]
+                )
+                for key, capital in self._refAsset_capital.items()
+                if key in self.pf_config["ref_portfolios"]
+            }
+
         self._metrics = {}
         self._strategies = {}
-        self._next_weights = None
+        self._opti_next_weights = None
         self._returns = None

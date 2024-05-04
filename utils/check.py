@@ -1,4 +1,11 @@
-def check_configs(portfolio=None, data=None, model=None, check_date=True, check_scale=False):
+import numpy as np
+def checks_weight(opti_next_weights: np.ndarray):
+    if not np.isclose(opti_next_weights.sum(), 1):
+        raise ValueError("Next weights must sum to 1.")
+
+
+
+def check_configs(portfolio=None, data=None, model=None, check_date: bool=True, check_scale: bool=False):
     """
     Validates the consistency of configuration details among any provided combinations
     of portfolio, data, and model configurations. This function checks if all provided

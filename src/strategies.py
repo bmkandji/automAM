@@ -30,4 +30,4 @@ class Strategies(_Strategies):
                self.strat_config["aversion"], self.strat_config["fee_rate"], self.strat_config["bounds"],
                portfolio.weights, portfolio.capital, portfolio.metrics["scale"]]
         # Exécute l'algorithme d'optimisation pour ajuster la position
-        portfolio.update_nweights(mean_variance_portfolio(*arg))
+        portfolio.update_opti_nweights(mean_variance_portfolio(*arg))

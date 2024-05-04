@@ -38,7 +38,7 @@ portfolio.fit_strat(strategy)
 
 print(portfolio.metrics)
 print(portfolio.strategies)
-print(portfolio.next_weights)
+print(portfolio.opti_next_weights)
 
 
 
@@ -53,3 +53,4 @@ print(portfolio.returns)
 new_horizon = datetime(2024, 2, 3)
 portfolio.forward(new_horizon)
 print(portfolio.capital)
+print(portfolio.refAsset_capital)

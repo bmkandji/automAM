@@ -1,5 +1,5 @@
 {
-    "symbols": ["AAPL", "MSFT", "GOOGL"],
+    "symbols": ["AAPL", "GOOGL", "MSFT"],
     "start_date": "2010-01-10",
     "end_date": "2020-01-10",
     "provider": "yfinance",

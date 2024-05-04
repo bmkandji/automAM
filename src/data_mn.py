@@ -47,7 +47,8 @@ class Data(_Data):
         # Remove duplicates and reset index
         if not new_data.empty:
             new_data.set_index('Date', inplace=True)
-            new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close'), self.data_config["scale"])
+            new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close')[self.data_config["symbols"]]
+                                           , self.data_config["scale"])
             initial_data_length = len(self.data)
             self._data = pd.concat([self.data, new_data]).drop_duplicates()
             self.replace_NA()
