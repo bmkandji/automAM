@@ -88,7 +88,7 @@ class Position(ABC):
         self._returns = returns
 
     def forward(self, new_horizon: datetime):
-        self._capital = 0 # fonction de calcule à definir
+        self._capital = 0  # fonction de calcule à definir
         self._weights = self._next_weights
         self._date = self._horizon
         self._next_weights = None
@@ -112,7 +112,6 @@ class Portfolio(Position):
         self._pf_config: Dict[str, Any] = pf_config
         self._strategies: dict = {}
         self._metrics: Dict[str, Any] = {}
-
 
     @property
     def pf_config(self) -> Dict[str, Any]:
@@ -140,7 +139,7 @@ class Portfolio(Position):
         if "model" not in self.metrics:
             raise ValueError("The portfolio metrics is empty, please update with trained data")
         strategies.fit(self)
-        self.strategies = strategies.strat_config # à ajuster en cas de plusieur strategies
+        self.strategies = strategies.strat_config  # à ajuster en cas de plusieur strategies
 
     def forward(self, data: Data):
         return None
