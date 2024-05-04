@@ -148,13 +148,13 @@ def mv_portfolio_objective(weights: np.ndarray, expected_returns: np.ndarray, co
     Returns:
     - float: The value of the portfolio's objective function, for minimization.
     """
-    pf_return = np.dot(weights, expected_returns)  # Calculate portfolio return
+    net_return = (np.dot(weights, expected_returns) -
+                  transaction_fee_rate * np.sum(np.abs(weights - current_weights)))  # Calculate net portfolio return
     pf_variance = np.dot(weights.T, np.dot(covariance_matrix, weights))  # Calculate portfolio variance
-    tr_costs = transaction_fee_rate * np.sum(np.abs(weights - current_weights))  # Transaction costs
 
     # Objective: Maximize return and minimize variance and transaction costs
     # Multiply variance by 0.5 and risk aversion factor for a balanced objective
-    return -(pf_return - initial_capital * risk_aversion_factor * 0.5 * pf_variance - tr_costs)
+    return -(net_return - initial_capital * risk_aversion_factor * 0.5 * pf_variance)
 
 
 def mean_variance_portfolio(expected_returns: np.ndarray, covariance_matrix: np.ndarray, risk_aversion_factor: float,

@@ -9,8 +9,7 @@ from abc import ABC
 
 
 class Position(ABC):
-    def __init__(self, capital: float, weights: np.ndarray, date: datetime, horizon: datetime,
-                 next_weights: Optional[np.ndarray] = None):
+    def __init__(self, capital: float, weights: np.ndarray, date: datetime, horizon: datetime):
         """
         Initializes a new instance of the Position class.
 
@@ -26,14 +25,13 @@ class Position(ABC):
         """
         if capital <= 0:
             raise ValueError("Capital must be greater than zero.")
-        if (not np.isclose(weights.sum(), 1) or
-                (next_weights is not None and not np.isclose(next_weights.sum(), 1))):
+        if not np.isclose(weights.sum(), 1) :
             raise ValueError("Weights must sum to 1.")
 
         self._capital = capital
         self._weights = weights
         self._date = date
-        self._next_weights = next_weights
+        self._next_weights: np.ndarray = None
         self._horizon = horizon
         self._returns = None
 
@@ -106,7 +104,7 @@ class Portfolio(Position):
             pf_config (dict): Configuration of the portfolio, must include at least a 'symbols' key.
             position (Position, optional): Initial state of the portfolio. Defaults to None.
         """
-        super().__init__(capital, weights, date, horizon, next_weights)
+        super().__init__(capital, weights, date, horizon)
         if len(pf_config["symbols"]) != weights.shape[0]:
             raise ValueError("weights does not match the number of portfolio assets.")
         self._pf_config: Dict[str, Any] = pf_config
