@@ -7,7 +7,6 @@ from src.data_mn import Data
 from _setup.rpy2_setup import setup_environment
 from src.common import weighting
 from datetime import datetime
-from utils.check import check_configs
 from src.abstract import _Model
 
 

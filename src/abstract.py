@@ -79,6 +79,10 @@ class _Data(ABC):
             **model.metrics  # Intégration des métriques du modèle aux métriques des données
         }
 
+    @abstractmethod
+    def window_returns(self, _date, _horizon):
+        pass
+
 
 # Définition de la classe abstraite _Strategies
 class _Strategies(ABC):

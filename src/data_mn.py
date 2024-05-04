@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import yfinance as yf
 from datetime import datetime
 from src.common import compute_log_returns
@@ -74,6 +75,31 @@ class Data(_Data):
         if len(self.data) > new_rows_added:
             self.data = self.data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
             self.data_config["start_date"] = self.data.index.min()
+
+    def window_returns(self, start_date: datetime, end_date: datetime) -> np.ndarray:
+        """
+        Filter the instance's DataFrame based on a date range, exclusive of the start date and inclusive of the end date,
+        and return an array containing the sum of each column in the filtered DataFrame.
+
+        Args:
+        - start_date (datetime): The start date, exclusive.
+        - end_date (datetime): The end date, inclusive.
+
+        Returns:
+        - np.ndarray: An array containing the sum of each column from the filtered DataFrame.
+
+        Raises:
+        - ValueError: If no data is available for the given date range.
+        """
+        # Ensure the index is in datetime format and filter the DataFrame
+        self.data.index = pd.to_datetime(self.data.index)
+        filtered_df = self.data.loc[(self.data.index > start_date) & (self.data.index <= end_date)]
+
+        # Check if the filtered DataFrame is empty
+        if filtered_df.empty:
+            raise ValueError(f"No data available from {start_date} to {end_date}.")
+
+        return filtered_df.sum()
 
     def replace_NA(self, window: int = 5) -> None:
         """

@@ -2,10 +2,10 @@ import numpy as np
 from datetime import datetime
 from typing import Dict, Any
 from typing import Optional
-from src.data_mn import Data
 from src.abstract import _Data, _Strategies
 from utils.check import check_configs
 from abc import ABC
+from utils import portfolio_tools as pf_t
 
 
 class Position(ABC):
@@ -17,7 +17,6 @@ class Position(ABC):
             capital (float): Initial capital amount, must be greater than zero.
             weights (np.ndarray): Asset allocation weights, must sum to 1.
             date (datetime): Effective date of this position.
-            next_weights (np.ndarray, optional): Future asset allocation weights.
             horizon (int, optional): Investment horizon in days.
 
         Raises:
@@ -25,7 +24,7 @@ class Position(ABC):
         """
         if capital <= 0:
             raise ValueError("Capital must be greater than zero.")
-        if not np.isclose(weights.sum(), 1) :
+        if not np.isclose(weights.sum(), 1):
             raise ValueError("Weights must sum to 1.")
 
         self._capital = capital
@@ -33,7 +32,6 @@ class Position(ABC):
         self._date = date
         self._next_weights: np.ndarray = None
         self._horizon = horizon
-        self._returns = None
 
     @property
     def capital(self) -> float:
@@ -63,7 +61,7 @@ class Position(ABC):
     @property
     def returns(self) -> np.ndarray:
         """Returns the investment horizon in days."""
-        return self._returns
+        return self.returns
 
     def update_nweights(self, next_weights: np.ndarray):
         """
@@ -80,29 +78,15 @@ class Position(ABC):
 
         self._next_weights = next_weights
 
-    def update_returns(self, returns: np.ndarray):
-        if self.weights.shape[0] != returns.shape[0]:
-            raise ValueError("The provided returns does not match the expected number of assets.")
-        self._returns = returns
-
-    def forward(self, new_horizon: datetime):
-        self._capital = 0  # fonction de calcule à definir
-        self._weights = self._next_weights
-        self._date = self._horizon
-        self._next_weights = None
-        self._horizon = new_horizon
-        self._returns = None
-
 
 class Portfolio(Position):
     def __init__(self, pf_config: Dict[str, Any], capital: float, weights: np.ndarray,
-                 date: datetime, horizon: datetime, next_weights: Optional[np.ndarray] = None):
+                 date: datetime, horizon: datetime):
         """
         Initializes a new instance of the Portfolio class, which manages positions and configurations.
 
         Args:
             pf_config (dict): Configuration of the portfolio, must include at least a 'symbols' key.
-            position (Position, optional): Initial state of the portfolio. Defaults to None.
         """
         super().__init__(capital, weights, date, horizon)
         if len(pf_config["symbols"]) != weights.shape[0]:
@@ -110,6 +94,7 @@ class Portfolio(Position):
         self._pf_config: Dict[str, Any] = pf_config
         self._strategies: dict = {}
         self._metrics: Dict[str, Any] = {}
+        self._returns: np.ndarray = None
 
     @property
     def pf_config(self) -> Dict[str, Any]:
@@ -139,8 +124,27 @@ class Portfolio(Position):
         strategies.fit(self)
         self.strategies = strategies.strat_config  # à ajuster en cas de plusieur strategies
 
-    def forward(self, data: Data):
-        return None
+    def observed_returns(self, data: _Data):
+        check_configs(portfolio=self, data=data, check_date=False)
+        if not (self.date >= data.data_config["start_date"] and self.horizon <= data.data_config["end_date"]):
+            raise ValueError("Data do not cover the portfolio zone")
+        self._returns = data.window_returns(self._date, self._horizon)
+
+    def forward(self, new_horizon: datetime):
+        if "fee_rate" not in self.strategies:
+            raise ValueError("The portfolio is not yet fitted by strategies")
+        if self._returns is None:
+            raise ValueError("The portfolio's observed returns is not yet updated by data:_Data")
+
+        past_capital = pf_t.capital_fw(self._next_weights, self._weights, self.strategies["fee_rate"], self._capital)
+        self._capital = pf_t.fw_portfolio_value(self._next_weights, self._returns, past_capital)
+        self._weights = self._next_weights
+        self._date = self._horizon
+        self._horizon = new_horizon
+        self._strategies = {}
+        self._metrics = {}
+        self._next_weights = None
+        self._returns = None
 
     @strategies.setter
     def strategies(self, value):

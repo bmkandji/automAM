@@ -73,25 +73,6 @@ def portfolio_variance(asset_weights: np.ndarray, covariance_matrix: np.ndarray,
     # Calculate and return the portfolio variance
     return initial_capital ** 2 * (asset_weights.T @ covariance_matrix @ asset_weights)
 
-
-import cvxpy as cp
-
-
-def transaction_costs(weights, current_weights, transaction_fee_rate, initial_capital: float = 1):
-    """
-    Calculate the transaction costs for rebalancing the portfolio.
-
-    Parameters:
-    - weights (cvxpy.Variable): The variable representing the new weights of the assets in the portfolio.
-    - current_weights (np.ndarray): Current portfolio weights before rebalancing.
-    - transaction_fee_rate (float): The transaction fee rate as a percentage of the traded amount.
-
-    Returns:
-    - cvxpy.Expression: The total transaction costs incurred when rebalancing.
-    """
-    return initial_capital * transaction_fee_rate * cp.sum(cp.abs(weights - current_weights))
-
-
 def portfolio_volatility(asset_weights: np.ndarray, covariance_matrix: np.ndarray, initial_capital: float = 1) -> float:
     """
     Calculate the expected volatility of the portfolio.
@@ -115,6 +96,66 @@ def portfolio_volatility(asset_weights: np.ndarray, covariance_matrix: np.ndarra
     return np.sqrt(pf_variance)
 
 
+def transaction_costs(weights: np.ndarray, current_weights: np.ndarray, transaction_fee_rate: float,
+                      initial_capital: float = 1)-> float :
+    """
+    Calculate the transaction costs for rebalancing the portfolio.
+
+    Parameters:
+    - weights (cvxpy.Variable): The variable representing the new weights of the assets in the portfolio.
+    - current_weights (np.ndarray): Current portfolio weights before rebalancing.
+    - transaction_fee_rate (float): The transaction fee rate as a percentage of the traded amount.
+
+    Returns:
+    - cvxpy.Expression: The total transaction costs incurred when rebalancing.
+    """
+    return initial_capital * transaction_fee_rate * np.sum(np.abs(weights - current_weights))
+
+
+def fw_portfolio_value(asset_weights: np.ndarray, expected_returns: np.ndarray, initial_capital: float = 1) -> float:
+    """
+    Calculate the final value of a portfolio based on the asset weights, expected returns, and the initial capital invested.
+
+    Parameters:
+    - asset_weights (np.ndarray): An array of weights for each asset in the portfolio,
+                                  where each weight is a fraction of the total investment.
+    - expected_returns (np.ndarray): An array of expected logarithmic returns for each asset over the period considered.
+    - initial_capital (float, optional): The total initial capital invested in the portfolio, default is 1.
+
+    Returns:
+    - float: The final total value of the portfolio after applying the expected returns.
+
+    This function uses the exponential of the expected returns to determine the growth factors for each asset,
+    then multiplies these by the respective portions of the initial capital according to the asset weights,
+    and sums the results to obtain the final portfolio value.
+    """
+
+    # Validate input lengths
+    if len(asset_weights) != len(expected_returns):
+        raise ValueError("Asset weights and expected returns must have the same length.")
+
+    # Calculate growth factors from expected logarithmic returns
+    growth_factors = np.exp(expected_returns)
+
+    return np.sum(initial_capital * asset_weights * growth_factors)
+
+
+def capital_fw(weights: np.ndarray, current_weights: np.ndarray, transaction_fee_rate: float,
+               initial_capital: float = 1.0) -> np.ndarray:
+    """
+    Calculate the final capital after rebalancing the portfolio considering the transaction costs.
+
+    Parameters:
+    - weights (cvxpy.Variable): The new weights of the assets in the portfolio being optimized.
+    - current_weights (np.ndarray): Current portfolio weights before rebalancing.
+    - transaction_fee_rate (float): The transaction fee rate as a percentage of the traded amount.
+    - initial_capital (float): Total capital of the portfolio at the start.
+
+    Returns:
+    - cvxpy.Expression: The total capital after deducting transaction costs.
+    """
+    return initial_capital - transaction_costs(weights, current_weights, transaction_fee_rate, initial_capital)
+
 
 def sum_to_one_constraint(weights: np.ndarray):
     """
@@ -131,7 +172,7 @@ def sum_to_one_constraint(weights: np.ndarray):
 
 
 def mv_portfolio_objective(weights: np.ndarray, expected_returns: np.ndarray, covariance_matrix: np.ndarray, risk_aversion_factor: float,
-                           transaction_fee_rate: float, current_weights: np.ndarray, initial_capital: float) -> float:
+                           transaction_fee_rate: float, current_weights: np.ndarray, initial_capital: float= 1.0) -> float:
     """
     Objective function for the portfolio optimization that calculates the negative of the adjusted portfolio return.
     This is designed for minimization in an optimizer to maximize the original function.
