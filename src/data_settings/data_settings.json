@@ -2,5 +2,6 @@
     "symbols": ["AAPL", "MSFT", "GOOGL"],
     "start_date": "2010-01-10",
     "end_date": "2020-01-10",
-    "provider": "yfinance"
+    "provider": "yfinance",
+    "scale": 100
 }

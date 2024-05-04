@@ -97,7 +97,7 @@ def portfolio_volatility(asset_weights: np.ndarray, covariance_matrix: np.ndarra
 
 
 def transaction_costs(weights: np.ndarray, current_weights: np.ndarray, transaction_fee_rate: float,
-                      initial_capital: float = 1)-> float :
+                      initial_capital: float = 1) -> float:
     """
     Calculate the transaction costs for rebalancing the portfolio.
 
@@ -112,9 +112,11 @@ def transaction_costs(weights: np.ndarray, current_weights: np.ndarray, transact
     return initial_capital * transaction_fee_rate * np.sum(np.abs(weights - current_weights))
 
 
-def fw_portfolio_value(asset_weights: np.ndarray, expected_returns: np.ndarray, initial_capital: float = 1) -> float:
+def fw_portfolio_value(asset_weights: np.ndarray, expected_returns: np.ndarray,
+                       initial_capital: float = 1, scale: float = 100) -> float:
     """
-    Calculate the final value of a portfolio based on the asset weights, expected returns, and the initial capital invested.
+    Calculate the final value of a portfolio based on the asset weights, expected returns,
+    and the initial capital invested.
 
     Parameters:
     - asset_weights (np.ndarray): An array of weights for each asset in the portfolio,
@@ -135,7 +137,7 @@ def fw_portfolio_value(asset_weights: np.ndarray, expected_returns: np.ndarray, 
         raise ValueError("Asset weights and expected returns must have the same length.")
 
     # Calculate growth factors from expected logarithmic returns
-    growth_factors = np.exp(expected_returns)
+    growth_factors = np.exp(expected_returns/scale)
 
     return np.sum(initial_capital * asset_weights * growth_factors)
 
@@ -171,8 +173,9 @@ def sum_to_one_constraint(weights: np.ndarray):
     return np.sum(weights) - 1
 
 
-def mv_portfolio_objective(weights: np.ndarray, expected_returns: np.ndarray, covariance_matrix: np.ndarray, risk_aversion_factor: float,
-                           transaction_fee_rate: float, current_weights: np.ndarray, initial_capital: float= 1.0) -> float:
+def mv_portfolio_objective(weights: np.ndarray, expected_returns: np.ndarray, covariance_matrix: np.ndarray,
+                           risk_aversion_factor: float, transaction_fee_rate: float, current_weights: np.ndarray,
+                           initial_capital: float = 1.0, scale: float = 100) -> float:
     """
     Objective function for the portfolio optimization that calculates the negative of the adjusted portfolio return.
     This is designed for minimization in an optimizer to maximize the original function.
@@ -195,12 +198,12 @@ def mv_portfolio_objective(weights: np.ndarray, expected_returns: np.ndarray, co
 
     # Objective: Maximize return and minimize variance and transaction costs
     # Multiply variance by 0.5 and risk aversion factor for a balanced objective
-    return -(net_return - initial_capital * risk_aversion_factor * 0.5 * pf_variance)
+    return -(net_return - scale * initial_capital * risk_aversion_factor * 0.5 * pf_variance)
 
 
 def mean_variance_portfolio(expected_returns: np.ndarray, covariance_matrix: np.ndarray, risk_aversion_factor: float,
                             transaction_fee_rate: float, bounds: list, current_weights: np.ndarray,
-                            initial_capital: float = 1.0) -> np.ndarray:
+                            initial_capital: float = 1.0, scale: float = 100) -> np.ndarray:
     """
     Optimizes portfolio using a mean-variance approach including transaction costs.
 
@@ -230,7 +233,7 @@ def mean_variance_portfolio(expected_returns: np.ndarray, covariance_matrix: np.
     # Optimize the portfolio
     result = minimize(mv_portfolio_objective, initial_guess,
                       args=(expected_returns, covariance_matrix, risk_aversion_factor,
-                            transaction_fee_rate, current_weights, initial_capital),
-                      method='SLSQP', bounds=bounds, constraints=constraints )
+                            transaction_fee_rate, current_weights, initial_capital, scale),
+                      method='SLSQP', bounds=bounds, constraints=constraints)
 
     return result.x

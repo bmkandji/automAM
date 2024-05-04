@@ -152,6 +152,7 @@ class Model(_Model):
         covariances = np.array([np.array(vec) for vec in results.rx2('covariances')])
         metrics = {
             "fit_date": data.data_config["end_date"],
+            "scale": data.data_config["scale"],
             "mean": weighting(means, scheme=self._model_config['model_config']["weights"]),
             "covariance": weighting(covariances, scheme=self._model_config['model_config']["weights"])
         }

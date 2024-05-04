@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any
 from datetime import datetime
 from utils.check import check_configs  # Importation des utilitaires nécessaires
+import pandas as pd
 
 
 # Définition de la classe abstraite _Model
@@ -11,7 +12,7 @@ class _Model(ABC):
         # Initialisation avec une configuration du modèle, stockée dans un dictionnaire
         self._model_config: Dict[str, Any] = model_config
         self._metrics: Dict[str, Any] = {
-            "fit_date": None}  # Dictionnaire pour stocker les métriques associées au modèle
+            "fit_date": None, "scale": None}  # Dictionnaire pour stocker les métriques associées au modèle
 
     @property
     def model_config(self) -> Dict[str, Any]:
@@ -30,8 +31,10 @@ class _Model(ABC):
         Doit être implémentée par des sous-classes spécifiques.
         """
         check_configs(data=data, model=self, check_date=False)
-        if self.metrics["fit_date"] and self.metrics["fit_date"] > data.data_config["end_date"]:
-            raise ValueError("Please use recent data.")
+        if (self.metrics["fit_date"] and (self.metrics["fit_date"] > data.data_config["end_date"] or
+                                          self._metrics['scale'] != data.data_config["scale"])):
+            raise ValueError("Please use recent data or same scale.")
+
         pass
 
 
@@ -40,12 +43,18 @@ class _Data(ABC):
     def __init__(self, data_config: Dict[str, Any]) -> None:
         # Initialisation avec une configuration des données, stockée dans un dictionnaire
         self._data_config: Dict[str, Any] = data_config
+        self._data: pd.DataFrame = pd.DataFrame()
         self._metrics: Dict[str, Any] = {}  # Dictionnaire pour stocker les métriques associées aux données
 
     @property
     def data_config(self) -> Dict[str, Any]:
         # Propriété pour accéder en lecture à la configuration des données
         return self._data_config
+
+    @property
+    def data(self) -> pd.DataFrame:
+        # Propriété pour accéder en lecture à la configuration des données
+        return self._data
 
     @property
     def metrics(self) -> Dict[str, Any]:
@@ -73,7 +82,7 @@ class _Data(ABC):
         Met à jour les métriques en fonction des résultats et configurations du modèle fourni.
         Utilise les configurations du modèle pour enrichir les métriques des données.
         """
-        check_configs(data=self, model=model)  # Validation des configurations
+        check_configs(data=self, model=model, check_scale=True)  # Validation des configurations
         self._metrics = {
             "model": model.model_config['model_config'],  # à ajuster en cas de plusieur types de model
             **model.metrics  # Intégration des métriques du modèle aux métriques des données

@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from typing import Any, Optional
+
+
 def compute_log_returns(df: pd.DataFrame, scale: float = 100) -> pd.DataFrame:
     """
     Calculates the logarithmic returns for the adjusted close prices in the DataFrame and scales them by a specified factor.
@@ -18,7 +20,6 @@ def compute_log_returns(df: pd.DataFrame, scale: float = 100) -> pd.DataFrame:
     log_returns = log_returns.iloc[1:]  # Excludes the first row
 
     return log_returns
-
 
 
 def weighting(data: np.ndarray, scheme: str = 'uniform', **kwargs: Any) -> np.ndarray:

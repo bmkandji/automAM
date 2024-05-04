@@ -1,4 +1,4 @@
-def check_configs(portfolio=None, data=None, model=None, check_date=True):
+def check_configs(portfolio=None, data=None, model=None, check_date=True, check_scale=False):
     """
     Validates the consistency of configuration details among any provided combinations
     of portfolio, data, and model configurations. This function checks if all provided
@@ -42,3 +42,6 @@ def check_configs(portfolio=None, data=None, model=None, check_date=True):
         # Check if all provided dates are the same
         if len(set(dates)) > 1 or len(dates) < 2:
             raise ValueError("Configuration mismatch: dates do not align among provided configurations.")
+
+    if check_scale and model and data and (model.metrics['scale'] != data.data_config["scale"]):
+        raise ValueError("model and data do not have the same scale value")

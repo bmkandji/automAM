@@ -108,6 +108,10 @@ class Portfolio(Position):
     def strategies(self) -> Dict[str, Any]:
         return self._strategies
 
+    @property
+    def returns(self) -> Dict[str, Any]:
+        return self._returns
+
     def update_metrics(self, data: _Data) -> None:
         """
         Updates the portfolio metrics based on the data.
@@ -122,30 +126,26 @@ class Portfolio(Position):
         if "model" not in self.metrics:
             raise ValueError("The portfolio metrics is empty, please update with trained data")
         strategies.fit(self)
-        self.strategies = strategies.strat_config  # à ajuster en cas de plusieur strategies
+        self._strategies = strategies.strat_config  # à ajuster en cas de plusieur strategies
 
     def observed_returns(self, data: _Data):
         check_configs(portfolio=self, data=data, check_date=False)
         if not (self.date >= data.data_config["start_date"] and self.horizon <= data.data_config["end_date"]):
             raise ValueError("Data do not cover the portfolio zone")
-        self._returns = data.window_returns(self._date, self._horizon)
+        self._returns = data.window_returns(self.date, self.horizon)
 
     def forward(self, new_horizon: datetime):
         if "fee_rate" not in self.strategies:
             raise ValueError("The portfolio is not yet fitted by strategies")
         if self._returns is None:
-            raise ValueError("The portfolio's observed returns is not yet updated by data:_Data")
+            raise ValueError("The portfolio's observed returns is not yet updated by observed data:_Data")
 
-        past_capital = pf_t.capital_fw(self._next_weights, self._weights, self.strategies["fee_rate"], self._capital)
-        self._capital = pf_t.fw_portfolio_value(self._next_weights, self._returns, past_capital)
-        self._weights = self._next_weights
-        self._date = self._horizon
+        past_capital = pf_t.capital_fw(self.next_weights, self.weights, self.strategies["fee_rate"], self.capital)
+        self._capital = pf_t.fw_portfolio_value(self.next_weights, self.returns, past_capital, self.metrics["scale"])
+        self._weights = self.next_weights
+        self._date = self.horizon
         self._horizon = new_horizon
-        self._strategies = {}
         self._metrics = {}
+        self._strategies = {}
         self._next_weights = None
         self._returns = None
-
-    @strategies.setter
-    def strategies(self, value):
-        self._strategies = value

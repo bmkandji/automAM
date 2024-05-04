@@ -14,7 +14,7 @@ class Data(_Data):
         data_config (str): Path to the data configuration file.
         """
         super().__init__(data_config)
-        self.data: pd.DataFrame = pd.DataFrame()
+
 
     def fetch_data(self, start_date: datetime, end_date: datetime) -> int:
         """
@@ -47,11 +47,11 @@ class Data(_Data):
         # Remove duplicates and reset index
         if not new_data.empty:
             new_data.set_index('Date', inplace=True)
-            new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close'))
+            new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close'), self.data_config["scale"])
             initial_data_length = len(self.data)
-            self.data = pd.concat([self.data, new_data]).drop_duplicates()
+            self._data = pd.concat([self.data, new_data]).drop_duplicates()
             self.replace_NA()
-            self.data_config["end_date"] = self.data.index.max()
+            self._data_config["end_date"] = self.data.index.max()
             new_data_length = len(self.data) - initial_data_length
             return new_data_length
 
@@ -73,8 +73,8 @@ class Data(_Data):
 
         # Remove the same number of oldest rows as new rows added
         if len(self.data) > new_rows_added:
-            self.data = self.data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
-            self.data_config["start_date"] = self.data.index.min()
+            self._data = self.data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
+            self._data_config["start_date"] = self.data.index.min()
 
     def window_returns(self, start_date: datetime, end_date: datetime) -> np.ndarray:
         """
@@ -92,7 +92,7 @@ class Data(_Data):
         - ValueError: If no data is available for the given date range.
         """
         # Ensure the index is in datetime format and filter the DataFrame
-        self.data.index = pd.to_datetime(self.data.index)
+        self._data.index = pd.to_datetime(self.data.index)
         filtered_df = self.data.loc[(self.data.index > start_date) & (self.data.index <= end_date)]
 
         # Check if the filtered DataFrame is empty

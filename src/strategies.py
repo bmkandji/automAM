@@ -2,6 +2,7 @@ from utils.portfolio_tools import mean_variance_portfolio  # Importe la fonction
 from src.portfolio import Portfolio  # Importe la classe Position depuis les paramètres d'outils
 from src.abstract import _Strategies
 
+
 class Strategies(_Strategies):
     def __init__(self, strat_config: dict):
         """
@@ -17,7 +18,6 @@ class Strategies(_Strategies):
         """
         super().__init__(strat_config)
 
-
     def fit(self, portfolio: Portfolio):
         """
         Exécute l'algorithme d'optimisation pour ajuster la position.
@@ -28,6 +28,6 @@ class Strategies(_Strategies):
         # Prépare les arguments nécessaires pour l'algorithme d'optimisation
         arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
                self.strat_config["aversion"], self.strat_config["fee_rate"], self.strat_config["bounds"],
-               portfolio.weights, portfolio.capital]
+               portfolio.weights, portfolio.capital, portfolio.metrics["scale"]]
         # Exécute l'algorithme d'optimisation pour ajuster la position
         portfolio.update_nweights(mean_variance_portfolio(*arg))
