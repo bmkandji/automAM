@@ -97,14 +97,22 @@ class Portfolio(Position):
         super().__init__(capital, weights, date, horizon)
         if len(pf_config["symbols"]) != weights.shape[0]:
             raise ValueError("The number of weights does not match the number of portfolio assets.")
+
+        if "ref_portfolios" not in pf_config:
+            pf_config["ref_portfolios"] = {}
+
         pf_config["ref_portfolios"] = {key: np.array(value) for key, value in
                                        pf_config['ref_portfolios'].items()}  # Convert lists to arrays
+
         self._pf_config: Dict[str, Any] = pf_config
         self._strategies: _Strategies = {}
         self._metrics: Dict[str, Any] = {}
         self._returns: pd.Series = None
-        self._right_next_weight: np.ndarray = None
         self._refAsset_capital: Dict[str, float] = {key: capital for key in pf_config["ref_portfolios"].keys()}
+
+        # add a fictive portfolio reference representing the theoretical optimal weights
+        self._refAsset_capital["Fict_pf"] = self.capital
+        self._pf_config["ref_portfolios"]["Fict_pf"] = self.weights
 
     @property
     def pf_config(self) -> Dict[str, Any]:
@@ -125,11 +133,6 @@ class Portfolio(Position):
     def returns(self) -> np.ndarray:
         """Returns the computed returns for the portfolio."""
         return self._returns.values
-
-    @property
-    def right_next_weight(self) -> Optional[np.ndarray]:
-        """Returns the correct next planned weights for asset allocation, if available."""
-        return self._right_next_weight
 
     @property
     def refAsset_capital(self) -> Dict[str, float]:
@@ -205,15 +208,23 @@ class Portfolio(Position):
         if self._returns is None:
             raise ValueError("The portfolio's returns have not been updated.")
 
+        # Evaluate the capital after fee of the fictive portfolio and update the weights
+        self._refAsset_capital["Fict_pf"] = pf_t.capital_fw(self.opti_next_weights,
+                                                            self.pf_config["ref_portfolios"]["Fict_pf"],
+                                                            self.strategies["fee_rate"],
+                                                            self.refAsset_capital["Fict_pf"])
+        self._pf_config["ref_portfolios"]["Fict_pf"] = self.opti_next_weights
+
         # If corrected weights are provided, validate them and update the optimal next weights
         if right_next_weight:
             checks_weight(right_next_weight)
             self._opti_next_weights = right_next_weight
 
         # Calculate the portfolio value at the new horizon
-        past_capital = pf_t.capital_fw(self.opti_next_weights, self.weights, self.strategies["fee_rate"], self.capital)
-        self._capital = pf_t.fw_portfolio_value(self.opti_next_weights, self.returns, past_capital,
-                                                self.metrics["scale"])
+        past_capital = pf_t.capital_fw(self.opti_next_weights, self.weights,
+                                       self.strategies["fee_rate"], self.capital)
+        self._capital = pf_t.fw_portfolio_value(self.opti_next_weights, self.returns,
+                                                past_capital, self.metrics["scale"])
 
         # Update portfolio attributes
         self._weights = self.opti_next_weights

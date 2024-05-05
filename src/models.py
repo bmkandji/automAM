@@ -53,58 +53,69 @@ class Model(_Model):
         - Returning forecast results including means and covariances.
         """
         ro.r('''
-            # Load the 'rmgarch' package, which is necessary for running multivariate GARCH models.
+            # Load the 'rmgarch' package, necessary for running multivariate GARCH models.
             library(rmgarch)
             
-            # Define the function 'run_dcc_garch_and_forecast' with necessary parameters.
-            run_dcc_garch_and_forecast <- function(returns, model_config, n_ahead, model_available) {
-                # Initialize 'dccfit' to NULL. This variable will store the fitted model.
-                dccfit <- NULL
+            # Define a function to run and forecast a DCC GARCH model based on specified parameters.
+            run_dcc_garch_and_forecast <- function(returns, model_config, n_ahead, no_fit) {
+              # Initialize variables to store the coefficients and the fitted model.
+              coef <- NULL
+              dccfit <- NULL
             
-                # Attempt to load an existing model if it is indicated as available.
-                if (model_available) {
-                    dccfit <- tryCatch({
-                        # Try to read the model from a specified path.
-                        readRDS(model_config$model_path)
-                    }, error=function(e) {
-                        # If an error occurs while reading, print the error message and return NULL.
-                        print(paste("Error reading RDS:", e$message))
-                        NULL
-                    })
-                }
+              # Define the GARCH model specification using parameters from 'model_config'.
+              spec <- ugarchspec(
+                variance.model = list(model = model_config$model), 
+                mean.model = list(armaOrder = model_config$armaOrder), 
+                distribution.model = model_config$distribution_garch
+              )
+              
+              # Create a multispecification model by replicating the univariate spec across the number of series in 'returns'.
+              multispec <- multispec(replicate(ncol(returns), spec))           
+              
+              # Attempt to load existing model coefficients if no fitting is indicated.
+              if (no_fit) {
+                coef <- tryCatch({
+                  readRDS(model_config$model_path)  # Read the model coefficients from the specified path.
+                }, error = function(e) {
+                  print(paste("Error reading RDS:", e$message))  # Log error message if reading fails.
+                  NULL  # Return NULL if an error occurs.
+                })
+              }
+              
+              # Define the DCC model specification, incorporating loaded coefficients if available.
+              dccspec <- dccspec(
+                uspec = multispec, 
+                dccOrder = model_config$dccOrder, 
+                distribution = model_config$distribution_dcc,
+                fixed.pars = coef  # This will be NULL if 'coef' is not loaded, handled by 'dccspec'.
+              )
+              
+              # Fit the DCC model using the specified data.
+              dccfit <- dccfit(dccspec, data = returns, out.sample = 0)
             
-                # If no model is loaded (i.e., dccfit is still NULL), fit a new model.
-                if (is.null(dccfit)) {
-                    # Define the GARCH model specification using parameters from 'model_config'.
-                    spec <- ugarchspec(variance.model=list(model=model_config$model), 
-                                       mean.model=list(armaOrder=model_config$armaOrder), 
-                                       distribution.model=model_config$distribution_garch)
-                    # Replicate the model specification across the number of columns in 'returns' data.
-                    multispec <- multispec(replicate(ncol(returns), spec))
-                    # Define the DCC model specification.
-                    dccspec <- dccspec(uspec=multispec, dccOrder=model_config$dccOrder, 
-                                       distribution=model_config$distribution_dcc)
-                    # Fit the DCC model.
-                    dccfit <- dccfit(dccspec, data=returns, out.sample=0)
-                    # Try to save the fitted model to a file.
-                    tryCatch({
-                        saveRDS(dccfit, file=model_config$model_path)
-                    }, error=function(e) {
-                        # If an error occurs while saving, print the error message.
-                        print(paste("Failed to save model:", e$message))
-                    })
-                }
-            
-                # Forecast using the fitted model.
-                fcast <- dccforecast(dccfit, n.ahead=n_ahead)
-                # Calculate covariance matrices for each forecast period.
-                covariance <- lapply(1:n_ahead, function(i) fcast@mforecast$H[[1]][,,i])
-                # Return a list containing the mean forecasts and covariance matrices.
-                return(list(means=fcast@mforecast$mu, covariances=covariance))
+              # If no coefficients were loaded, save the newly fitted model's coefficients.
+              if (is.null(coef)) {
+                coef <- coef(dccfit)  # Extract coefficients from the fitted model.
+                tryCatch({
+                  saveRDS(coef, file = model_config$model_path)  # Save the coefficients to the specified path.
+                }, error = function(e) {
+                  print(paste("Failed to save model:", e$message))  # Log error if saving fails.
+                })
+              }
+              
+              # Forecast using the fitted model for 'n_ahead' periods.
+              fcast <- dccforecast(dccfit, n.ahead = n_ahead)
+              
+              # Calculate covariance matrices for each forecast period.
+              covariance <- lapply(1:n_ahead, function(i) fcast@mforecast$H[[1]][,,i])
+              
+              # Return a list containing the mean forecasts and covariance matrices.
+              return(list(means = fcast@mforecast$mu, covariances = covariance))
             }
-        ''')
+            ''')
 
     def fit_fcast(self, data: Data, horizon: datetime):
+
         """
         Perform forecasting using the defined DCC GARCH model.
 
@@ -144,7 +155,9 @@ class Model(_Model):
         n_ahead = (horizon - data.data_config["end_date"]).days
         # Call the R function 'run_dcc_garch_and_forecast' with the necessary parameters.
         # This function is expected to perform GARCH modeling and forecasting.
-        results = ro.globalenv['run_dcc_garch_and_forecast'](r_returns, model_config_vector, n_ahead, model_available)
+
+        no_fit = model_available and not self.metrics["to_update"]
+        results = ro.globalenv['run_dcc_garch_and_forecast'](r_returns, model_config_vector, n_ahead, no_fit)
 
         # Process the returned results from R, extracting means and covariances.
         # Convert them to numpy arrays for easier manipulation and use in Python.

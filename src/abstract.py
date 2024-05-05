@@ -12,7 +12,8 @@ class _Model(ABC):
         # Initialisation avec une configuration du modèle, stockée dans un dictionnaire
         self._model_config: Dict[str, Any] = model_config
         self._metrics: Dict[str, Any] = {
-            "fit_date": None, "scale": None}  # Dictionnaire pour stocker les métriques associées au modèle
+            "fit_date": None, "scale": None,
+            "to_update": True}  # Dictionnaire pour stocker les métriques associées au modèle
 
     @property
     def model_config(self) -> Dict[str, Any]:
@@ -31,9 +32,14 @@ class _Model(ABC):
         Doit être implémentée par des sous-classes spécifiques.
         """
         check_configs(data=data, model=self, check_date=False)
-        if (self.metrics["fit_date"] and (self.metrics["fit_date"] > data.data_config["end_date"] or
-                                          self._metrics['scale'] != data.data_config["scale"])):
-            raise ValueError("Please use recent data or same scale.")
+
+        if self.metrics["fit_date"]:
+
+            check_update = (data.data_config["end_date"] - self.metrics["fit_date"]).days
+            if check_update <= 0 or self._metrics['scale'] != data.data_config["scale"]:
+                raise ValueError("Please use recent data or same scale.")
+
+            self._metrics["to_update"] = check_update >= self.model_config["model_config"]["recalib"]
 
         pass
 
