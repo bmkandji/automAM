@@ -48,12 +48,12 @@ class Data(_Data):
         if not new_data.empty:
             new_data.set_index('Date', inplace=True)
             new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close')[self.data_config["symbols"]]
-                                           , self.data_config["scale"])
-            initial_data_length = len(self.data)
-            self._data = pd.concat([self.data, new_data]).drop_duplicates()
+                                           , self._data_config["scale"])
+            initial_data_length = len(self._data)
+            self._data = pd.concat([self._data, new_data]).drop_duplicates()
             self.replace_NA()
-            self._data_config["end_date"] = self.data.index.max()
-            new_data_length = len(self.data) - initial_data_length
+            self._data_config["end_date"] = self._data.index.max()
+            new_data_length = len(self._data) - initial_data_length
             return new_data_length
 
         return 0
@@ -69,13 +69,13 @@ class Data(_Data):
         """
         if new_end_date is None:
             new_end_date = datetime.today().strftime('%Y-%m-%d')
-        start_date_update = self.data.index.max()
+        start_date_update = self._data.index.max()
         new_rows_added = self.fetch_data(start_date_update, new_end_date)
 
         # Remove the same number of oldest rows as new rows added
-        if len(self.data) > new_rows_added:
-            self._data = self.data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
-            self._data_config["start_date"] = self.data.index.min()
+        if len(self._data) > new_rows_added:
+            self._data = self._data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
+            self._data_config["start_date"] = self._data.index.min()
 
     def window_returns(self, start_date: datetime, end_date: datetime) -> np.ndarray:
         """
@@ -93,8 +93,8 @@ class Data(_Data):
         - ValueError: If no data is available for the given date range.
         """
         # Ensure the index is in datetime format and filter the DataFrame
-        self._data.index = pd.to_datetime(self.data.index)
-        filtered_df = self.data.loc[(self.data.index > start_date) & (self.data.index <= end_date)]
+        self._data.index = pd.to_datetime(self._data.index)
+        filtered_df = self.data.loc[(self._data.index > start_date) & (self._data.index <= end_date)]
 
         # Check if the filtered DataFrame is empty
         if filtered_df.empty:
@@ -111,7 +111,7 @@ class Data(_Data):
         """
         # Calculate the rolling mean with a specified window, minimum number of observations in the window required
         # to have a value is 1
-        roll_means = self.data.rolling(window=window, min_periods=1, center=True).mean()
+        roll_means = self._data.rolling(window=window, min_periods=1, center=True).mean()
 
         # Replace NA values in the DataFrame with the calculated rolling means
-        self.data.fillna(roll_means, inplace=True)
+        self._data.fillna(roll_means, inplace=True)

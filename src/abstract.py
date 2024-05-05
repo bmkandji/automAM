@@ -4,6 +4,7 @@ from typing import Dict, Any
 from datetime import datetime
 from utils.check import check_configs  # Importation des utilitaires nécessaires
 import pandas as pd
+import numpy as np
 
 
 # Définition de la classe abstraite _Model
@@ -60,7 +61,11 @@ class _Data(ABC):
     @property
     def data(self) -> pd.DataFrame:
         # Propriété pour accéder en lecture à la configuration des données
-        return self._data
+        key, value = next(iter(self.data_config["currency"].items()))
+        data = self._data.copy()
+        data.insert(0, key, value)
+        return data
+
 
     @property
     def metrics(self) -> Dict[str, Any]:
@@ -95,7 +100,7 @@ class _Data(ABC):
         }
 
     @abstractmethod
-    def window_returns(self, _date, _horizon):
+    def window_returns(self, start_date: datetime, end_date: datetime) -> np.ndarray:
         pass
 
 

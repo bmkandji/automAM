@@ -95,7 +95,7 @@ class Portfolio(Position):
             ValueError: If the number of weights does not match the number of symbols.
         """
         super().__init__(capital, weights, date, horizon)
-        if len(pf_config["symbols"]) != weights.shape[0]:
+        if len(pf_config["symbols"])+1 != weights.shape[0]:
             raise ValueError("The number of weights does not match the number of portfolio assets.")
 
         if "ref_portfolios" not in pf_config:
@@ -111,8 +111,8 @@ class Portfolio(Position):
         self._refAsset_capital: Dict[str, float] = {key: capital for key in pf_config["ref_portfolios"].keys()}
 
         # add a fictive portfolio reference representing the theoretical optimal weights
-        self._refAsset_capital["Fict_pf"] = self.capital
-        self._pf_config["ref_portfolios"]["Fict_pf"] = self.weights
+        self._refAsset_capital["Theoretical_pf"] = self.capital
+        self._pf_config["ref_portfolios"]["Theoretical_pf"] = self.weights
 
     @property
     def pf_config(self) -> Dict[str, Any]:
@@ -209,11 +209,12 @@ class Portfolio(Position):
             raise ValueError("The portfolio's returns have not been updated.")
 
         # Evaluate the capital after fee of the fictive portfolio and update the weights
-        self._refAsset_capital["Fict_pf"] = pf_t.capital_fw(self.opti_next_weights,
-                                                            self.pf_config["ref_portfolios"]["Fict_pf"],
-                                                            self.strategies["fee_rate"],
-                                                            self.refAsset_capital["Fict_pf"])
-        self._pf_config["ref_portfolios"]["Fict_pf"] = self.opti_next_weights
+        self._refAsset_capital["Theoretical_pf"] = pf_t.capital_fw(self.opti_next_weights,
+                                                                   self.pf_config["ref_portfolios"]["Theoretical_pf"],
+                                                                   self.strategies["fee_rate"],
+                                                                   self.refAsset_capital["Theoretical_pf"])
+
+        self._pf_config["ref_portfolios"]["Theoretical_pf"] = self.opti_next_weights
 
         # If corrected weights are provided, validate them and update the optimal next weights
         if right_next_weight:

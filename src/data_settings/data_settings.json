@@ -3,5 +3,6 @@
     "start_date": "2010-01-10",
     "end_date": "2020-01-10",
     "provider": "yfinance",
-    "scale": 100
+    "scale": 100,
+    "currency": {"EUR":  0.0}
 }

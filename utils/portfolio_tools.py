@@ -219,7 +219,6 @@ def mean_variance_portfolio(expected_returns: np.ndarray, covariance_matrix: np.
     Returns:
     - np.ndarray: The optimized weights for the portfolio.
     """
-
     num_assets = expected_returns.shape[0]
     # Ensure bounds are repeated for each asset correctly
     bounds = [tuple(bounds)] * num_assets  # Apply the same bounds to all assets if a single bound is given

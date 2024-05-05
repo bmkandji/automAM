@@ -135,7 +135,8 @@ class Model(_Model):
 
         # Convert the DataFrame stored in 'data.data' to an R data.frame using rpy2's conversion.
         # This is necessary because R functions expect data in R data.frame format.
-        r_returns = pandas2ri.py2rpy(data.data)
+        # noinspection PyProtectedMember
+        r_returns = pandas2ri.py2rpy(data._data)
 
         # Check if the symbols in the configuration match those in the data.
         # This is a form of validation to ensure that the data being processed is as expected.
@@ -163,11 +164,19 @@ class Model(_Model):
         # Convert them to numpy arrays for easier manipulation and use in Python.
         means = np.array([np.array(vec).flatten() for vec in results.rx2('means')])
         covariances = np.array([np.array(vec) for vec in results.rx2('covariances')])
+
+        mean = weighting(means, scheme=self._model_config['model_config']["weights"])
+        covariance = weighting(covariances, scheme=self._model_config['model_config']["weights"])
+
+        _, value = next(iter(data.data_config["currency"].items()))
+        mean = np.insert(mean, 0, value)
+        covariance = np.insert(np.insert(covariance, 0, 0, axis=1), 0, 0, axis=0)
+
         metrics = {
             "fit_date": data.data_config["end_date"],
             "scale": data.data_config["scale"],
-            "mean": weighting(means, scheme=self._model_config['model_config']["weights"]),
-            "covariance": weighting(covariances, scheme=self._model_config['model_config']["weights"])
+            "mean": mean,
+            "covariance": covariance
         }
         # to take out of the if/else, if 2 model or plus
         self._metrics = metrics

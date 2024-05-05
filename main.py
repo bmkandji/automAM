@@ -20,7 +20,7 @@ model.fit_fcast(data, horizon)
 
 # portfolio
 pf_config = load_json_config(r'C:\Users\MatarKANDJI\automAM\src\portfolio_settings\pf_settings.json')
-n = len(pf_config["symbols"])
+n = len(pf_config["symbols"])+1
 weights = np.ones(n) / n
 date_deb = datetime(2024, 1, 9)
 
