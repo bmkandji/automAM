@@ -156,6 +156,7 @@ def capital_fw(weights: np.ndarray, current_weights: np.ndarray, transaction_fee
     - initial_capital (float): Total capital of the portfolio at the start.
 
     Returns:
+        object:
     - cvxpy.Expression: The total capital after deducting transaction costs.
     """
     return initial_capital - transact_cost(current_weights, weights, transaction_fee_rate)

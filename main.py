@@ -44,7 +44,7 @@ print(portfolio.opti_next_weights)
 
 # suite
 
-next_horizon = datetime(2024, 1, 31)
+next_horizon = datetime(2024, 1, 15)
 data.update_data(next_horizon)
 
 portfolio.forward(data)

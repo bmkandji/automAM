@@ -174,9 +174,10 @@ class Model(_Model):
 
         metrics = {
             "fit_date": data.data_config["end_date"],
+            "horizon": horizon,
             "scale": data.data_config["scale"],
             "mean": mean,
-            "covariance": covariance
+            "covariance": covariance,
         }
         # to take out of the if/else, if 2 model or plus
         self._metrics = metrics

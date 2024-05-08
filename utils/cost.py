@@ -2,7 +2,7 @@ import numpy as np
 
 
 def trans_cost_imp(x: float, current_weights: np.ndarray,
-                     next_weights: np.ndarray, transaction_fee_rate: float) -> float:
+                   next_weights: np.ndarray, transaction_fee_rate: float) -> float:
     """
     Calculates a modified transaction cost for a given value x, considering dynamic pricing and quantity conditions.
 
@@ -46,7 +46,8 @@ def transact_cost(current_weights: np.ndarray, next_weights: np.ndarray, transac
     Returns:
     - float: The optimal 'x' value that potentially minimizes the transaction costs.
     """
-    if len(next_weights[1:]) == 0 or np.all(next_weights[1:] == 0):  # Check if all next_weights values excluding the
+    if np.all(next_weights[1:] == 0):  # Check if all next_weights values excluding the 
+        # (à voir or len(next_weights[1:]) == 0 )
         # first are zero
         return 1 - np.sum(transaction_fee_rate * current_weights[1:])  # If true, returns the sum of weighted prices
 
@@ -55,10 +56,11 @@ def transact_cost(current_weights: np.ndarray, next_weights: np.ndarray, transac
 
     breaks_pt = (current_weights / alter)[1:]  # Calculates potential break points from price and adjusted quantity
     # arrays
-    target_pt = np.sort(breaks_pt[breaks_pt <= 1])[::-1]  # Selects and sorts feasible targets
+    target_pt = np.sort(breaks_pt[breaks_pt < 1])[::-1]  # Selects and sorts feasible targets
 
     if len(target_pt) == 0:
-        return 1 - np.sum(transaction_fee_rate * current_weights[1:])
+        return 1 - (1 - np.sum(transaction_fee_rate * current_weights[1:]))/(1 - np.sum(
+            transaction_fee_rate * next_weights[1:]))
 
     target_pt = np.insert(target_pt, 0, 1)  # Inserts 1 at the beginning of targets array
 
