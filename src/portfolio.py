@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from datetime import datetime
 from typing import Dict, Any
 from typing import Optional
@@ -10,7 +9,7 @@ from utils import portfolio_tools as pf_t
 
 
 class Position(ABC):
-    def __init__(self, capital: float, weights: np.ndarray, date: datetime, horizon: datetime):
+    def __init__(self, capital: float, weights: np.ndarray, date: datetime):
         """
         Initializes a new instance of the Position class with initial capital, asset weights, and dates.
 
@@ -18,7 +17,6 @@ class Position(ABC):
             capital (float): Initial capital amount. Must be greater than zero.
             weights (np.ndarray): Asset allocation weights, which must sum to 1.
             date (datetime): Effective date of this position.
-            horizon (datetime): Investment horizon represented as a datetime.
 
         Raises:
             ValueError: If the initial conditions for capital or weights are not met.
@@ -31,7 +29,6 @@ class Position(ABC):
         self._weights: np.ndarray = weights
         self._date: datetime = date
         self._opti_next_weights: np.ndarray = None
-        self._horizon: datetime = horizon
 
     @property
     def capital(self) -> float:
@@ -53,16 +50,6 @@ class Position(ABC):
         """Returns the planned next weights for asset allocation, if available."""
         return self._opti_next_weights
 
-    @property
-    def horizon(self) -> datetime:
-        """Returns the investment horizon as a datetime object."""
-        return self._horizon
-
-    @property
-    def returns(self) -> np.ndarray:
-        """Placeholder property to provide structure; actual implementation should follow."""
-        # This needs proper implementation to function correctly
-        return self.returns  # This could lead to a recursive call if not implemented properly
 
     def update_opti_nweights(self, opti_next_weights: np.ndarray):
         """
@@ -79,8 +66,8 @@ class Position(ABC):
 
 
 class Portfolio(Position):
-    def __init__(self, pf_config: Dict[str, Any], capital: float, weights: np.ndarray, date: datetime,
-                 horizon: datetime):
+    def __init__(self, pf_config: Dict[str, Any], capital: float,
+                 weights: np.ndarray, date: datetime):
         """
         Initializes a new instance of the Portfolio class, extending the Position with portfolio configurations.
 
@@ -89,13 +76,12 @@ class Portfolio(Position):
             capital (float): Initial capital amount.
             weights (np.ndarray): Asset allocation weights.
             date (datetime): Effective date of the portfolio.
-            horizon (datetime): Investment horizon represented as a datetime.
 
         Raises:
             ValueError: If the number of weights does not match the number of symbols.
         """
-        super().__init__(capital, weights, date, horizon)
-        if len(pf_config["symbols"])+1 != weights.shape[0]:
+        super().__init__(capital, weights, date)
+        if len(pf_config["symbols"]) + 1 != weights.shape[0]:
             raise ValueError("The number of weights does not match the number of portfolio assets.")
 
         if "ref_portfolios" not in pf_config:
@@ -107,7 +93,6 @@ class Portfolio(Position):
         self._pf_config: Dict[str, Any] = pf_config
         self._strategies: _Strategies = {}
         self._metrics: Dict[str, Any] = {}
-        self._returns: pd.Series = None
         self._refAsset_capital: Dict[str, float] = {key: capital for key in pf_config["ref_portfolios"].keys()}
 
         # add a fictive portfolio reference representing the theoretical optimal weights
@@ -128,11 +113,6 @@ class Portfolio(Position):
     def strategies(self) -> Dict[str, Any]:
         """Returns the strategy configuration applied to the portfolio."""
         return self._strategies
-
-    @property
-    def returns(self) -> np.ndarray:
-        """Returns the computed returns for the portfolio."""
-        return self._returns.values
 
     @property
     def refAsset_capital(self) -> Dict[str, float]:
@@ -169,44 +149,26 @@ class Portfolio(Position):
         strategies.fit(self)
         self._strategies = strategies.strat_config  # Adjusted to handle multiple strategies
 
-    def observed_returns(self, data: _Data):
+    def forward(self, data: _Data, right_next_weight: np.ndarray = None, update_ref_pf: bool = True):
         """
-        Updates portfolio with returns observed over the specified period.
+        Advances the portfolio, updating weights and returns.
 
         Args:
-            data (_Data): Data containing the returns over a specified period.
-
-        Raises:
-            ValueError: If the data does not cover the required portfolio period.
-        """
-        check_configs(portfolio=self, data=data, check_date=False)
-        if not (self.date >= data.data_config["start_date"] and self.horizon <= data.data_config["end_date"]):
-            raise ValueError("The data does not cover the required period for the portfolio.")
-        self._returns = data.window_returns(self.date, self.horizon)  # Compute and store returns
-
-    def forward(self, new_horizon: datetime, right_next_weight: np.ndarray = None, update_ref_pf: bool = True):
-        """
-        Advances the portfolio to a new horizon, updating weights and returns.
-
-        Args:
-            new_horizon (datetime): The new horizon date for the portfolio.
             right_next_weight (np.ndarray, optional): Corrected next weights to apply.
             update_ref_pf (bool): Flag to determine if reference portfolio weights should be updated.
 
         Raises:
             ValueError: For invalid dates, missing strategies, or unupdated returns.
         """
-        # Check if the new horizon is later than the current one
-        if new_horizon <= self.horizon:
-            raise ValueError("The new horizon must be later than the current horizon.")
+
+        check_configs(portfolio=self, data=data, check_date=False)
+        if not (data.data_config["start_date"] <= self.date < data.data_config["end_date"]):
+            raise ValueError("The data does not cover the required period for the portfolio.")
+        returns = data.window_returns(self.date, data.data_config["end_date"])  # Compute and store returns
 
         # Check if necessary strategies are present in the portfolio
         if "fee_rate" not in self.strategies:
             raise ValueError("The portfolio lacks necessary strategies.")
-
-        # Check if the portfolio's returns have been updated
-        if self._returns is None:
-            raise ValueError("The portfolio's returns have not been updated.")
 
         # Evaluate the capital after fee of the fictive portfolio and update the weights
         self._refAsset_capital["Theoretical_pf"] = pf_t.capital_fw(self.opti_next_weights,
@@ -221,16 +183,15 @@ class Portfolio(Position):
             checks_weight(right_next_weight)
             self._opti_next_weights = right_next_weight
 
-        # Calculate the portfolio value at the new horizon
+        # Calculate the portfolio value at t+
         past_capital = pf_t.capital_fw(self.opti_next_weights, self.weights,
                                        self.strategies["fee_rate"], self.capital)
-        self._capital = pf_t.fw_portfolio_value(self.opti_next_weights, self.returns,
+        self._capital = pf_t.fw_portfolio_value(self.opti_next_weights, returns,
                                                 past_capital, self.metrics["scale"])
 
         # Update portfolio attributes
         self._weights = self.opti_next_weights
-        self._date = self.horizon
-        self._horizon = new_horizon
+        self._date = data.data_config["end_date"]
 
         # Update reference portfolio values if required
         if not update_ref_pf:
@@ -243,14 +204,16 @@ class Portfolio(Position):
                     self.pf_config["ref_portfolios"][key],
                     self.strategies["fee_rate"],
                     capital)
-            for key, capital in self._refAsset_capital.items()
+                for key, capital in self._refAsset_capital.items()
+                if key != "Theoretical_pf"
             }
+            ref_capitalNetfee["Theoretical_pf"] = self._refAsset_capital["Theoretical_pf"]
             print(ref_capitalNetfee)
 
             self._refAsset_capital = {
                 key: pf_t.fw_portfolio_value(
                     self.pf_config["ref_portfolios"][key],
-                    self.returns,
+                    returns,
                     capital,
                     self.metrics["scale"]
                 )
@@ -264,4 +227,3 @@ class Portfolio(Position):
         self._metrics = {}
         self._strategies = {}
         self._opti_next_weights = None
-        self._returns = None

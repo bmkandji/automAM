@@ -25,7 +25,7 @@ weights = np.ones(n) / n
 date_deb = datetime(2024, 1, 9)
 
 
-portfolio = Portfolio(pf_config, 1, weights, date_deb, horizon)
+portfolio = Portfolio(pf_config, 1, weights, date_deb)
 portfolio.update_metrics(data)
 
 
@@ -47,10 +47,6 @@ print(portfolio.opti_next_weights)
 next_horizon = datetime(2024, 1, 31)
 data.update_data(next_horizon)
 
-portfolio.observed_returns(data)
-print(portfolio.returns)
-
-new_horizon = datetime(2024, 2, 3)
-portfolio.forward(new_horizon)
+portfolio.forward(data)
 print(portfolio.capital)
 print(portfolio.refAsset_capital)
