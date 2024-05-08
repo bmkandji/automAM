@@ -55,7 +55,7 @@ def transact_cost(current_weights: np.ndarray, next_weights: np.ndarray, transac
 
     breaks_pt = (current_weights / alter)[1:]  # Calculates potential break points from price and adjusted quantity
     # arrays
-    target_pt = np.sort(breaks_pt[breaks_pt < 1])[::-1]  # Selects and sorts feasible targets
+    target_pt = np.sort(breaks_pt[breaks_pt <= 1])[::-1]  # Selects and sorts feasible targets
 
     if len(target_pt) == 0:
         return 1 - np.sum(transaction_fee_rate * current_weights[1:])

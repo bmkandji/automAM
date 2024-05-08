@@ -236,6 +236,7 @@ class Portfolio(Position):
         if not update_ref_pf:
             self._refAsset_capital = {}
         elif update_ref_pf and self._refAsset_capital:
+            print(self._refAsset_capital.items())
             ref_capitalNetfee = {
                 key: pf_t.capital_fw(
                     self.pf_config["ref_portfolios"][key],
@@ -244,6 +245,7 @@ class Portfolio(Position):
                     capital)
             for key, capital in self._refAsset_capital.items()
             }
+            print(ref_capitalNetfee)
 
             self._refAsset_capital = {
                 key: pf_t.fw_portfolio_value(
