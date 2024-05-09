@@ -69,7 +69,8 @@ class Model(_Model):
                 distribution.model = model_config$distribution_garch
               )
               
-              # Create a multispecification model by replicating the univariate spec across the number of series in 'returns'.
+              # Create a multispecification model by replicating the univariate spec across 
+              # the number of series in 'returns'.
               multispec <- multispec(replicate(ncol(returns), spec))           
               
               # Attempt to load existing model coefficients if no fitting is indicated.
