@@ -1,7 +1,7 @@
 {
     "symbols": ["AAPL", "GOOGL", "MSFT"],
-    "start_date": "2010-01-10",
-    "end_date": "2020-01-10",
+    "start_date": null,
+    "end_date": null,
     "provider": "yfinance",
     "scale": 100,
     "currency": {"EUR":  0.0}

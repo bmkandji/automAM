@@ -1,5 +1,6 @@
 {
     "symbols": ["AAPL", "GOOGL", "MSFT"],
+    "fixed_weight" : [[1, 0, 0, 0],[0, 0, 0, 0]],
     "ref_portfolios": {
         "AAPL": [0.0, 1.0, 0.0, 0.0],
         "GOOGL": [0.0, 0.0, 1.0, 0.0],

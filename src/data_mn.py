@@ -29,6 +29,7 @@ class Data(_Data):
         Returns:
         int: The number of new rows added to the DataFrame after processing.
         """
+
         new_data = pd.DataFrame()
         for symbol in self.data_config["symbols"]:
             try:
@@ -55,7 +56,7 @@ class Data(_Data):
             self._data_config["end_date"] = self._data.index.max()
             new_data_length = len(self._data) - initial_data_length
             return new_data_length
-
+        self._data_config["start_date"] = self._data.index.min()
         return 0
 
     def update_data(self, new_end_date: datetime = None):
@@ -67,6 +68,12 @@ class Data(_Data):
         new_end_date (str, optional): The end date for the new data fetch (format: 'YYYY-MM-DD'). Defaults to today's
         date.
         """
+        if self.data.empty:
+            raise ValueError("please fetch before update")
+
+        if self.data_config["end_date"] >= new_end_date:
+            raise ValueError("The please provide recent date for update")
+
         if new_end_date is None:
             new_end_date = datetime.today().strftime('%Y-%m-%d')
         start_date_update = self._data.index.max()

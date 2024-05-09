@@ -50,19 +50,6 @@ class Position(ABC):
         """Returns the planned next weights for asset allocation, if available."""
         return self._opti_next_weights
 
-    def update_opti_nweights(self, opti_next_weights: np.ndarray):
-        """
-        Updates the next weights after validating that they sum to 1.
-
-        Args:
-            opti_next_weights (np.ndarray): New planned weights, must sum to 1.
-
-        Raises:
-            ValueError: If the next weights do not sum to 1.
-        """
-        checks_weight(opti_next_weights)  # Check sum to 1
-        self._opti_next_weights = opti_next_weights  # Update the weights
-
 
 class Portfolio(Position):
     def __init__(self, pf_config: Dict[str, Any], capital: float,
@@ -145,7 +132,9 @@ class Portfolio(Position):
         """
         if "model" not in self.metrics:
             raise ValueError("The portfolio metrics are empty or incomplete, please update with trained data.")
-        strategies.fit(self)
+        opti_next_weights = strategies.fit(self)
+        checks_weight(opti_next_weights)  # Check sum to 1
+        self._opti_next_weights = opti_next_weights
         self._strategies = strategies  # Adjusted to handle multiple strategies
 
     def forward(self, data: _Data, right_next_weight: np.ndarray = None, update_ref_pf: bool = True,
@@ -161,7 +150,7 @@ class Portfolio(Position):
         Raises:
             ValueError: For invalid dates, missing strategies, or unupdated returns.
         """
-
+        print(data.data_config["start_date"])
         check_configs(portfolio=self, data=data, check_date=False)
         if not (data.data_config["start_date"] <= self.date < data.data_config["end_date"]):
             raise ValueError("The data does not cover the required period for the portfolio.")
@@ -172,7 +161,8 @@ class Portfolio(Position):
         if "fee_rate" not in self.strategies.strat_config:
             raise ValueError("The portfolio lacks necessary strategies.")
         print(self.opti_next_weights,
-              self.pf_config["ref_portfolios"]["Theoretical_pf"],self.strategies.strat_config["fee_rate"], self.refAsset_capital["Theoretical_pf"])
+              self.pf_config["ref_portfolios"]["Theoretical_pf"],
+              self.strategies.strat_config["fee_rate"], self.refAsset_capital["Theoretical_pf"])
         # Evaluate the capital after fee of the fictive portfolio and update the weights
         self._refAsset_capital["Theoretical_pf"] = pf_t.capital_fw(self.opti_next_weights,
                                                                    self.pf_config["ref_portfolios"]["Theoretical_pf"],
