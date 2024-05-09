@@ -28,8 +28,8 @@ def check_inputs(asset_weights, asset_expected_returns, initial_capital):
         raise ValueError("initial_capital must be a positive number.")
 
 
-def portfolio_return(asset_weights: np.ndarray, expected_returns: np.ndarray, initial_capital: float = 1) -> ndarray[
-    Any, dtype[floating[Any]]]:
+def portfolio_return(asset_weights: np.ndarray, expected_returns: np.ndarray,
+                     initial_capital: float = 1) -> ndarray[Any, dtype[floating[Any]]]:
     """
     Calculate the expected return of the portfolio.
 
@@ -50,8 +50,8 @@ def portfolio_return(asset_weights: np.ndarray, expected_returns: np.ndarray, in
     return initial_capital * (asset_weights.T @ expected_returns)
 
 
-def portfolio_variance(asset_weights: np.ndarray, covariance_matrix: np.ndarray, initial_capital: float = 1) -> ndarray[
-    Any, dtype[floating[Any]]]:
+def portfolio_variance(asset_weights: np.ndarray, covariance_matrix: np.ndarray,
+                       initial_capital: float = 1) -> ndarray[Any, dtype[floating[Any]]]:
     """
     Calculate the expected variance of the portfolio.
 
@@ -122,7 +122,7 @@ def fw_portfolio_value(asset_weights: np.ndarray, returns: np.ndarray,
 
     Parameters:
     - asset_weights (np.ndarray): An array of weights for each asset in the portfolio,
-                                  where each weight is a fraction of the total investment.
+                                  where each weight are a fraction of the total investment.
     - returns (np.ndarray): An array of observed logarithmic returns for each asset over the period considered.
     - initial_capital (float, optional): The total initial capital invested in the portfolio, default is 1.
 
@@ -140,8 +140,11 @@ def fw_portfolio_value(asset_weights: np.ndarray, returns: np.ndarray,
 
     # Calculate growth factors from expected logarithmic returns
     growth_factors = np.exp(returns / scale)
+    portfolio = initial_capital * asset_weights * growth_factors
+    pf_value = np.sum(portfolio)
+    weights = portfolio / pf_value
 
-    return np.sum(initial_capital * asset_weights * growth_factors)
+    return pf_value, weights
 
 
 def capital_fw(weights: np.ndarray, current_weights: np.ndarray, transaction_fee_rate: float,
@@ -162,7 +165,7 @@ def capital_fw(weights: np.ndarray, current_weights: np.ndarray, transaction_fee
     return initial_capital - transact_cost(current_weights, weights, transaction_fee_rate)
 
 
-def merge_weight(weights: np.ndarray, fixed_weights: np.ndarray) -> np.ndarray:
+def merge_weights(weights: np.ndarray, fixed_weights: np.ndarray) -> np.ndarray:
     """
     Combines dynamic weights with fixed weights based on a mask defined in fixed_weights.
 
@@ -175,7 +178,7 @@ def merge_weight(weights: np.ndarray, fixed_weights: np.ndarray) -> np.ndarray:
     - np.ndarray: The merged weights for all assets including both fixed and dynamic weights.
     """
     num_assets = fixed_weights[0].shape[0]
-    all_weight = np.zeros(num_assets)
+    all_weights = np.zeros(num_assets)
 
     # Error checking
     if weights.size != (fixed_weights[0] == 0).sum():
@@ -183,13 +186,13 @@ def merge_weight(weights: np.ndarray, fixed_weights: np.ndarray) -> np.ndarray:
 
     # Assign fixed weights based on the mask
     fixed_mask = fixed_weights[0] == 1
-    all_weight[fixed_mask] = fixed_weights[1][fixed_mask]
+    all_weights[fixed_mask] = fixed_weights[1][fixed_mask]
 
     # Assign dynamic weights to the non-fixed positions
     non_fixed_mask = fixed_weights[0] == 0
-    all_weight[non_fixed_mask] = weights
+    all_weights[non_fixed_mask] = weights
 
-    return all_weight
+    return all_weights
 
 
 def sum_to_one_constraint(weights: np.ndarray, fixed_weights: np.ndarray) -> float:
@@ -203,7 +206,7 @@ def sum_to_one_constraint(weights: np.ndarray, fixed_weights: np.ndarray) -> flo
     Returns:
     - float: The deviation from 1, which should be zero if the constraint is met.
     """
-    return np.sum(merge_weight(weights, fixed_weights)) - 1
+    return np.sum(merge_weights(weights, fixed_weights)) - 1
 
 
 def mv_portfolio_objective(weights: np.ndarray, expected_returns: np.ndarray,
@@ -251,9 +254,10 @@ def mean_variance_portfolio(expected_returns: np.ndarray, covariance_matrix: np.
     - transaction_fee_rate (float): Transaction fee rate.
     - current_weights (np.ndarray): Current weights in the portfolio.
     - bounds (list of tuple): A single tuple containing (min, max) bounds to be applied to all tradable assets.
-    - initial_capital (float, optional): Initial capital, defaults to 1. Typically represents a normalized portfolio.
+    - initial_capital (float, optional): Initial capital, defaults to 1. Typically, represents a normalized portfolio.
     - scale (float, optional): Scaling factor for the optimization, defaults to 100.
-    - fixed_weights (np.ndarray, optional): A 2-row array where the first row indicates whether a weight is fixed (1) or not (0), and the second row specifies the fixed weights.
+    - fixed_weights (np.ndarray, optional): A 2-row array where the first row indicates whether a weights are fixed
+    (1) or not (0), and the second row specifies the fixed weights.
 
     Returns:
     - np.ndarray: Optimized portfolio weights.
@@ -276,14 +280,15 @@ def mean_variance_portfolio(expected_returns: np.ndarray, covariance_matrix: np.
     constraints = [{'type': 'eq', 'fun': lambda x: sum_to_one_constraint(x, fixed_weights)}]
 
     # Define the objective function, adjusting it for fixed weights
-    objective_func = lambda x: mv_portfolio_objective(merge_weight(x, fixed_weights),
-                                                      expected_returns, covariance_matrix,
-                                                      risk_aversion_factor, transaction_fee_rate,
-                                                      current_weights, initial_capital, scale)
+    def objective(x):
+        return mv_portfolio_objective(merge_weights(x, fixed_weights),
+                                      expected_returns, covariance_matrix,
+                                      risk_aversion_factor, transaction_fee_rate,
+                                      current_weights, initial_capital, scale)
 
     # Optimize the portfolio
-    result = minimize(objective_func, initial_guess, method='SLSQP',
+    result = minimize(objective, initial_guess, method='SLSQP',
                       bounds=bounds, constraints=constraints)
 
     # Combine the optimized tradable weights with the fixed weights and return
-    return merge_weight(result.x, fixed_weights)
+    return merge_weights(result.x, fixed_weights)

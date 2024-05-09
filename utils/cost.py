@@ -49,7 +49,7 @@ def transact_cost(current_weights: np.ndarray, next_weights: np.ndarray, transac
     if np.all(next_weights[1:] == 0):  # Check if all next_weights values excluding the 
         # (à voir or len(next_weights[1:]) == 0 )
         # first are zero
-        return 1 - np.sum(transaction_fee_rate * current_weights[1:])  # If true, returns the sum of weighted prices
+        return 1 - np.sum(transaction_fee_rate * current_weights[1:])  # If true, returns the sum of weightsed prices
 
     alter = next_weights.copy()  # Copies next_weights to avoid modifying the original array
     alter[alter == 0] = 2  # Replaces zeros in next_weights with an arbitrary value > 1 to avoid division by zero

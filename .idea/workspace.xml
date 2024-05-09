@@ -7,7 +7,13 @@
     <list default="true" id="ecfb871f-68a4-4833-b885-b871ed5eb1cd" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/common.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/common.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/model_settings/dcc_model_coef.rds" beforeDir="false" afterPath="$PROJECT_DIR$/src/model_settings/dcc_model_coef.rds" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/portfolio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/portfolio_settings/pf_settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/portfolio_settings/pf_settings.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/strategies.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/strategies.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/check.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/check.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/cost.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/cost.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/portfolio_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/portfolio_tools.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -65,5 +71,16 @@
       <updated>1714853818992</updated>
     </task>
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
 </project>

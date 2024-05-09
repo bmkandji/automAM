@@ -76,10 +76,10 @@ def weighting(data: np.ndarray, scheme: str = 'uniform', **kwargs: Any) -> np.nd
         weights = omega ** np.arange(n)
         weights /= np.sum(weights)
     else:
-        raise ValueError("Unsupported weighting scheme")
+        raise ValueError("Unsupported weightsing scheme")
 
-    # Calculate the weighted average of the matrices along the first axis (rows),
+    # Calculate the weightsed average of the matrices along the first axis (rows),
     # using the specified weights to compute the average.
-    weighted_mean = np.average(data, axis=0, weights=weights)
+    weightsed_mean = np.average(data, axis=0, weights=weights)
 
-    return weighted_mean
+    return weightsed_mean

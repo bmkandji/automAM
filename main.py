@@ -34,15 +34,16 @@ portfolio.update_metrics(data)
 
 
 # strategies
+
 strat_config = load_json_config(r'C:\Users\MatarKANDJI\automAM\src\strat_settings\strat_settings.json')
 strategy = Strategies(strat_config)
-portfolio.fit_strat(strategy)
+portfolio.update_weights(strategy)
 
 
 # result
 print(portfolio.metrics)
 print(portfolio.strategies)
-print(portfolio.opti_next_weights)
+print(portfolio.next_weights)
 
 
 # suite
@@ -51,4 +52,4 @@ data.update_data(next_horizon)
 
 portfolio.forward(data)
 print(portfolio.capital)
-print(portfolio.refAsset_capital)
+print(portfolio.pf_config)

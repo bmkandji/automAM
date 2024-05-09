@@ -1,5 +1,5 @@
 import numpy as np
-def checks_weight(opti_next_weights: np.ndarray):
+def checks_weights(opti_next_weights: np.ndarray):
     if not np.isclose(opti_next_weights.sum(), 1):
         raise ValueError("Next weights must sum to 1.")
 

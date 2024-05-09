@@ -30,7 +30,7 @@ class Strategies(_Strategies):
         arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
                self.strat_config["aversion"], self.strat_config["fee_rate"],
                self.strat_config["bounds"],portfolio.weights, portfolio.capital,
-               portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weight"])]
+               portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"])]
 
         # Exécute l'algorithme d'optimisation pour ajuster la position
         return mean_variance_portfolio(*arg)
