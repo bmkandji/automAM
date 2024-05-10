@@ -40,6 +40,7 @@ class _Model(ABC):
         if self.metrics["fit_date"]:
 
             check_update = (data.data_config["end_date"] - self.metrics["fit_date"]).days
+            print(check_update)
             if check_update <= 0 or self._metrics['scale'] != data.data_config["scale"]:
                 raise ValueError("Please use recent data or same scale.")
 
