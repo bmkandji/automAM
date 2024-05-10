@@ -101,7 +101,6 @@ class Portfolio(Position):
         """Returns the planned next weights for asset allocation, if available."""
         return self._next_weights
 
-
     def update_metrics(self, data: _Data) -> None:
         """
         Updates the portfolio metrics based on provided data.
@@ -150,13 +149,13 @@ class Portfolio(Position):
             ValueError: For invalid dates, missing strategies, or un-updated returns.
         """
 
-        check_configs(portfolio=self, data=data, check_date=False)
+        check_configs(portfolio=self, data=data, check_date=False, check_fit_date= False)
 
         if not (data.data_config["start_date"] <= self.date < data.data_config["end_date"]):
             raise ValueError("The data does not cover the required period for the portfolio.")
 
         returns = data.window_returns(self.date, data.data_config["end_date"])
-
+        print(returns)
         if right_capital_weights is not None:
             checks_weights(right_capital_weights["weight"])
             (self._capital, self._weights) = (right_capital_weights["capital"],
@@ -165,7 +164,7 @@ class Portfolio(Position):
         else:
             past_capital = pf_t.capital_fw(self.next_weights, self.weights,
                                            self.strategies.strat_config["fee_rate"], self.capital)
-
+            print(past_capital)
             self._capital, self._weights = pf_t.fw_portfolio_value(self.next_weights,
                                                                    returns, past_capital,
                                                                    self.metrics["scale"])

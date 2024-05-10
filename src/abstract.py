@@ -13,7 +13,8 @@ class _Model(ABC):
         # Initialisation avec une configuration du modèle, stockée dans un dictionnaire
         self._model_config: Dict[str, Any] = model_config
         self._metrics: Dict[str, Any] = {
-            "fit_date": None, "scale": None,
+            "fit_date": None,
+            "scale": None,
             "to_update": True}  # Dictionnaire pour stocker les métriques associées au modèle
 
     @property
@@ -26,13 +27,15 @@ class _Model(ABC):
         # Propriété pour accéder en lecture aux métriques du modèle
         return self._metrics
 
-    @abstractmethod
-    def fit_fcast(self, data: _Data, horizon: datetime):
+    def check_fit(self, data: _Data, horizon: datetime):
         """
         Méthode abstraite pour ajuster le modèle à des données et prédire jusqu'à un certain horizon.
         Doit être implémentée par des sous-classes spécifiques.
         """
         check_configs(data=data, model=self, check_date=False)
+
+        if horizon <= data.data_config["end_date"]:
+            raise ValueError("Please give a horizon posterior to the end date of the data")
 
         if self.metrics["fit_date"]:
 

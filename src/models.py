@@ -129,7 +129,7 @@ class Model(_Model):
         This method activates the interface between pandas and R, converts stock data to an R-compatible format,
         checks model availability, and executes the R forecasting function. The results are stored and returned.
         """
-
+        self.check_fit(data, horizon)
         # Activate the automatic conversion of pandas data structures to R data structures.
         # This is crucial for passing pandas DataFrame or Series objects directly to R functions.
         pandas2ri.activate()
@@ -157,7 +157,6 @@ class Model(_Model):
         n_ahead = (horizon - data.data_config["end_date"]).days
         # Call the R function 'run_dcc_garch_and_forecast' with the necessary parameters.
         # This function is expected to perform GARCH modeling and forecasting.
-
         no_fit = model_available and not self.metrics["to_update"]
         results = ro.globalenv['run_dcc_garch_and_forecast'](r_returns, model_config_vector, n_ahead, no_fit)
 
@@ -179,6 +178,7 @@ class Model(_Model):
             "scale": data.data_config["scale"],
             "mean": mean,
             "covariance": covariance,
+            "to_update": True
         }
         # to take out of the if/else, if 2 model or plus
         self._metrics = metrics

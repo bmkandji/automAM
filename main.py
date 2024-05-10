@@ -6,13 +6,11 @@ from src.portfolio import Portfolio
 from utils.load import load_json_config
 from datetime import datetime
 
-
 # data
 data_config = load_json_config(r'C:\Users\MatarKANDJI\automAM\src\data_settings\data_settings.json')
 data = Data(data_config)
 data.fetch_data(datetime(2008, 1, 1), datetime(2024, 1, 10))
 print(data.data)  # Initial data
-
 
 # model
 horizon = datetime(2024, 1, 20)
@@ -20,18 +18,14 @@ model_config = load_json_config(r'C:\Users\MatarKANDJI\automAM\src\model_setting
 model = Model(model_config)
 model.fit_fcast(data, horizon)
 
-
 # portfolio
 pf_config = load_json_config(r'C:\Users\MatarKANDJI\automAM\src\portfolio_settings\pf_settings.json')
-n = len(pf_config["symbols"])+1
+n = len(pf_config["symbols"]) + 1
 weights = np.ones(n) / n
 date_deb = datetime(2024, 1, 9)
 
-
 portfolio = Portfolio(pf_config, 1, weights, date_deb)
 portfolio.update_metrics(data)
-
-
 
 # strategies
 
@@ -39,17 +33,31 @@ strat_config = load_json_config(r'C:\Users\MatarKANDJI\automAM\src\strat_setting
 strategy = Strategies(strat_config)
 portfolio.update_weights(strategy)
 
-
 # result
 print(portfolio.metrics)
 print(portfolio.strategies)
 print(portfolio.next_weights)
 
-
 # suite
-next_horizon = datetime(2024, 1, 30)
-data.update_data(next_horizon)
+
+data.update_data(horizon)
+horizon = datetime(2024, 1, 30)
+model.fit_fcast(data, horizon)
 
 portfolio.forward(data)
 print(portfolio.capital)
-print(portfolio.pf_config)
+print(portfolio.pf_config["ref_portfolios"])
+print(portfolio.weights)
+print(portfolio.next_weights)
+
+
+# forward
+data.update_data(horizon)
+horizon = datetime(2024, 2, 10)
+model.fit_fcast(data, horizon)
+
+portfolio.forward(data)
+print(portfolio.capital)
+print(portfolio.pf_config["ref_portfolios"])
+print(portfolio.weights)
+print(portfolio.next_weights)

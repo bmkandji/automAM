@@ -1,11 +1,13 @@
 import numpy as np
-def checks_weights(opti_next_weights: np.ndarray):
-    if not np.isclose(opti_next_weights.sum(), 1):
-        raise ValueError("Next weights must sum to 1.")
 
 
+def checks_weights(weights: np.ndarray):
+    if not np.isclose(weights.sum(), 1):
+        raise ValueError("weights must sum to 1.")
 
-def check_configs(portfolio=None, data=None, model=None, check_date: bool=True, check_scale: bool=False):
+
+def check_configs(portfolio=None, data=None, model=None,
+                  check_date: bool = True, check_scale: bool = False, check_fit_date: bool = True):
     """
     Validates the consistency of configuration details among any provided combinations
     of portfolio, data, and model configurations. This function checks if all provided
@@ -52,3 +54,6 @@ def check_configs(portfolio=None, data=None, model=None, check_date: bool=True, 
 
     if check_scale and model and data and (model.metrics['scale'] != data.data_config["scale"]):
         raise ValueError("model and data do not have the same scale value")
+
+    if check_fit_date and portfolio and data and (portfolio.date != data.metrics["fit_date"]):
+        raise ValueError("portfolio and data do not have the same scale value")

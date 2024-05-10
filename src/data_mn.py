@@ -48,8 +48,7 @@ class Data(_Data):
         # Remove duplicates and reset index
         if not new_data.empty:
             new_data.set_index('Date', inplace=True)
-            new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close')[self.data_config["symbols"]]
-                                           , self._data_config["scale"])
+            new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close')[self.data_config["symbols"]], self._data_config["scale"])
             initial_data_length = len(self._data)
             self._data = pd.concat([self._data, new_data]).drop_duplicates()
             self.replace_NA()
@@ -83,6 +82,8 @@ class Data(_Data):
         if len(self._data) > new_rows_added:
             self._data = self._data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
             self._data_config["start_date"] = self._data.index.min()
+
+        self._metrics = {}
 
     def window_returns(self, start_date: datetime, end_date: datetime) -> np.ndarray:
         """
