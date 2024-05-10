@@ -15,7 +15,7 @@ import pandas_market_calendars as mcal
 # data
 data_config = load_json_config(r'C:\Users\MatarKANDJI\automAM\src\data_settings\data_settings.json')
 data = Data(data_config)
-data.fetch_data(dt.datetime(2008, 1, 1), dt.datetime(2018, 1, 3))
+data.fetch_data(dt.datetime(2008, 1, 1), dt.datetime(2018, 1, 2+1))
 print(data.data)
 # model
 horizon = dt.datetime(2018, 1, 10)
@@ -44,8 +44,8 @@ portfolio.update_weights(strategy)
 nasdaq = mcal.get_calendar('NASDAQ')
 
 # Définir les dates de début et de fin
-start_date = dt.datetime(2018, 1, 4)
-end_date = dt.datetime(2018, 4, 4)
+start_date = dt.datetime(2018, 1, 3)
+end_date = dt.datetime(2019, 1, 3)
 
 # Récupérer les jours de trading
 # Si vous voulez que le DatetimeIndex soit sans fuseau horaire dès le début
@@ -64,7 +64,7 @@ portfolios = [copy.deepcopy(portfolio)]
 for item in range(len(date_list)-11):
     # forward
     print(portfolio.date)
-    data.update_data(date_list[item])
+    data.update_data((date_list[item]+ dt.timedelta(days=1)))
     model.fit_fcast(data, date_list[item+10])
     portfolio.forward(data)
     portfolios.append(copy.deepcopy(portfolio))
