@@ -181,7 +181,7 @@ def merge_weights(weights: np.ndarray, fixed_weights: np.ndarray) -> np.ndarray:
     all_weights = np.zeros(num_assets)
 
     # Error checking
-    if weights.size != (fixed_weights[0] == 0).sum():
+    if weights.size != sum(fixed_weights[0] == 0):
         raise ValueError("Number of dynamic weights does not match the number of non-fixed positions.")
 
     # Assign fixed weights based on the mask
@@ -212,7 +212,8 @@ def sum_to_one_constraint(weights: np.ndarray, fixed_weights: np.ndarray) -> flo
 def mv_portfolio_objective(weights: np.ndarray, expected_returns: np.ndarray,
                            covariance_matrix: np.ndarray, risk_aversion_factor: float,
                            transaction_fee_rate: float, current_weights: np.ndarray,
-                           initial_capital: float = 1.0, scale: float = 100) -> float:
+                           initial_capital: float = 1.0, scale: float = 100,
+                           tk_acount_capital: bool = False, tk_acount_scale: bool = False) -> float:
     """
     Objective function for the portfolio optimization that calculates the negative of the adjusted portfolio return.
     This is designed for minimization in an optimizer to maximize the original function.
@@ -229,6 +230,10 @@ def mv_portfolio_objective(weights: np.ndarray, expected_returns: np.ndarray,
     Returns:
     - float: The value of the portfolio's objective function, for minimization.
     """
+    if not tk_acount_capital:
+        initial_capital = 1
+    if not tk_acount_scale:
+        scale = 1
     fee = transact_cost(current_weights, weights, transaction_fee_rate)
     net_return = (1 - fee) * np.dot(weights, expected_returns) - fee  # Calculate the net portfolio return
     pf_variance = (1 - fee) ** 2 * np.dot(weights.T, np.dot(covariance_matrix, weights))  # Calculate portfolio variance
@@ -241,7 +246,8 @@ def mv_portfolio_objective(weights: np.ndarray, expected_returns: np.ndarray,
 def mean_variance_portfolio(expected_returns: np.ndarray, covariance_matrix: np.ndarray,
                             risk_aversion_factor: float, transaction_fee_rate: float, bounds: list,
                             current_weights: np.ndarray, initial_capital: float = 1.0,
-                            scale: float = 100, fixed_weights: np.ndarray = None) -> np.ndarray:
+                            scale: float = 100, fixed_weights: np.ndarray = None,
+                            tk_acount_capital: bool = False, tk_acount_scale: bool = False) -> np.ndarray:
     """
     Optimizes a portfolio using a mean-variance approach, including transaction costs,
     with the ability to specify fixed weights for certain assets. The optimization applies
@@ -284,7 +290,8 @@ def mean_variance_portfolio(expected_returns: np.ndarray, covariance_matrix: np.
         return mv_portfolio_objective(merge_weights(x, fixed_weights),
                                       expected_returns, covariance_matrix,
                                       risk_aversion_factor, transaction_fee_rate,
-                                      current_weights, initial_capital, scale)
+                                      current_weights, initial_capital,
+                                      scale, tk_acount_capital, tk_acount_scale)
 
     # Optimize the portfolio
     result = minimize(objective, initial_guess, method='SLSQP',

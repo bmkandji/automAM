@@ -164,10 +164,11 @@ class Portfolio(Position):
         else:
             past_capital = pf_t.capital_fw(self.next_weights, self.weights,
                                            self.strategies.strat_config["fee_rate"], self.capital)
-            print(past_capital)
+
             self._capital, self._weights = pf_t.fw_portfolio_value(self.next_weights,
                                                                    returns, past_capital,
                                                                    self.metrics["scale"])
+            print(self.capital, self.weights)
 
         self._date = data.data_config["end_date"]
 

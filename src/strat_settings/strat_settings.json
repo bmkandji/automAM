@@ -1,6 +1,6 @@
 {
     "strategies": "mean_var",
-    "aversion": 1,
-    "fee_rate": 0.005,
+    "aversion": 0.1,
+    "fee_rate": 0.10,
     "bounds": [0, null]
 }

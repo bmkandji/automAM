@@ -8,7 +8,7 @@ from src.portfolio import Portfolio
 from utils.load import load_json_config
 import datetime as dt
 import copy
-import holidays
+import pandas_market_calendars as mcal
 
 
 
@@ -39,28 +39,31 @@ strategy = Strategies(strat_config)
 portfolio.update_weights(strategy)
 
 
+
+# Créer un calendrier pour le NASDAQ
+nasdaq = mcal.get_calendar('NASDAQ')
+
 # Définir les dates de début et de fin
 start_date = dt.datetime(2018, 1, 4)
-end_date =  dt.datetime(2019, 4, 4) #dt.datetime.today()
+end_date = dt.datetime(2018, 4, 4)
 
-# Créer une liste des jours fériés pour les États-Unis
-us_holidays = holidays.UnitedStates()
+# Récupérer les jours de trading
+# Si vous voulez que le DatetimeIndex soit sans fuseau horaire dès le début
+trading_days = nasdaq.valid_days(start_date=start_date, end_date=end_date).tz_localize(None)
 
-# Générer la liste des jours, en excluant les week-ends et les jours fériés
-date_list = [
-    start_date + dt.timedelta(days=x)
-    for x in range(0, (end_date - start_date).days + 1, 2)
-    if (start_date + dt.timedelta(days=x)).weekday() < 5 and (start_date + dt.timedelta(days=x)).date() not in us_holidays
-]
+# Convertir en liste de datetime pour une manipulation facile
+date_list = [day.to_pydatetime() for day in trading_days]
 
-# Filtrer pour enlever les samedis et dimanches
-date_list = [date for date in date_list if date.weekday() < 5]
-print(date_list)
+# Afficher la liste des jours
+for day in date_list:
+    print(day)
+
 
 portfolios = [copy.deepcopy(portfolio)]
 
 for item in range(len(date_list)-11):
     # forward
+    print(portfolio.date)
     data.update_data(date_list[item])
     model.fit_fcast(data, date_list[item+10])
     portfolio.forward(data)
