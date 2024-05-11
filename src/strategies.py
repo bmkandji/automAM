@@ -1,6 +1,6 @@
 from utils.portfolio_tools import mean_variance_portfolio  # Importe la fonction d'algorithme d'optimisation
 import numpy  as np
-from src.portfolio import Portfolio  # Importe la classe Position depuis les paramètres d'outils
+from src.local_portfolio import Portfolio  # Importe la classe Position depuis les paramètres d'outils
 from src.abstract import _Strategies
 
 

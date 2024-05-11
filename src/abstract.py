@@ -126,3 +126,51 @@ class _Strategies(ABC):
         Doit être implémentée par des sous-classes pour adapter la stratégie à un contexte spécifique.
         """
         pass
+
+
+class _BrokerAPI(ABC):
+    """
+    Classe abstraite qui définit l'interface pour les interactions avec les brokers.
+    """
+
+    @abstractmethod
+    def get_current_positions(self):
+        """
+        Retourne toutes les positions ouvertes du compte.
+        """
+        pass
+
+    @abstractmethod
+    def get_open_orders(self):
+        """
+        Retourne tous les ordres ouverts.
+        """
+        pass
+
+    @abstractmethod
+    def get_available_cash(self):
+        """
+        Retourne le montant de cash disponible.
+        """
+        pass
+
+    @abstractmethod
+    def get_current_prices(self, assets):
+        """
+        Récupère les prix actuels pour une liste d'actifs.
+        """
+        pass
+
+    @abstractmethod
+    def place_order(self, asset, action, quantity):
+        """
+        Place un ordre sur le marché.
+        """
+        pass
+
+    @abstractmethod
+    def cancel_order(self, order_id):
+        """
+        Annule un ordre spécifique.
+        """
+        pass

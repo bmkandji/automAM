@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from src.data_mn import Data
 from src.strategies import Strategies
 from src.models import Model
-from src.portfolio import Portfolio
+from src.local_portfolio import Portfolio
 from utils.load import load_json_config
 import datetime as dt
 import copy
