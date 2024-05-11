@@ -19,7 +19,7 @@ class Strategies(_Strategies):
         """
         super().__init__(strat_config)
 
-    def fit(self, portfolio: Portfolio):
+    def fit(self, portfolio: Portfolio) -> np.ndarray:
         """
         Exécute l'algorithme d'optimisation pour ajuster la position.
 

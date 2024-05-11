@@ -4,7 +4,7 @@ import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.vectors import ListVector
 from src.data_mn import Data
-from settings.rpy2_setup import setup_environment
+from configs.rpy2_setup import setup_environment
 from src.common import weighting
 from datetime import datetime
 from src.abstract import _Model
@@ -25,7 +25,7 @@ class Model(_Model):
         """
 
         # Load the JSON configuration for the model using a utility function.
-        # This configuration contains paths, model specifications, and other necessary settings.
+        # This configuration contains paths, model specifications, and other necessary configs.
         super().__init__(model_config)
         self.stp_environment()
         self.define_r_functions()
