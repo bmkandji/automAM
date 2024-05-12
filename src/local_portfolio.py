@@ -129,6 +129,7 @@ class Portfolio(Position):
         if "model" not in self.metrics:
             raise ValueError("The portfolio metrics are empty or incomplete, please update with trained data.")
         next_weights = strategies.fit(self)
+        print(next_weights)
         checks_weights(next_weights)  # Check sum to 1
         self._next_weights = next_weights
         self._strategies = strategies  # Adjusted to handle multiple strategies

@@ -8,7 +8,14 @@
         },
     "max_return" :         {
             "strategies": "max_return",
-            "target_vol": [10,12],
+            "target_vol": [0, 15],
+            "fee_rate": 0.0,
+            "bounds": [0, null]
+        },
+    "traking_error" :         {
+            "strategies": "max_return",
+            "tol": 0.5,
+            "ref_assert": "^GSPC",
             "fee_rate": 0.0,
             "bounds": [0, null]
         }
