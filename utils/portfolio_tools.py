@@ -499,5 +499,4 @@ def tracking_error(expected_returns: np.ndarray, covariance_matrix: np.ndarray,
     result = minimize(objective, initial_guess, method='SLSQP',
                       bounds=bounds, constraints=constraints)
     # Combine the optimized tradable weights with the fixed weights and return
-    print(result.x)
     return merge_weights(result.x, fixed_weights)
