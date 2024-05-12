@@ -1,20 +1,20 @@
 {
     "mean_var":
         {
-            "strategies": "mean_var",
+            "strategy": "mean_var",
             "aversion": 5,
             "fee_rate": 0.0,
             "bounds": [0, null]
         },
     "max_return" :         {
-            "strategies": "max_return",
-            "target_vol": [0, 15],
+            "strategy": "max_return",
+            "max_vol": 1.2,
             "fee_rate": 0.0,
             "bounds": [0, null]
         },
     "traking_error" :         {
-            "strategies": "max_return",
-            "tol": 0.5,
+            "strategy": "traking_error",
+            "tol": 1,
             "ref_assert": "^GSPC",
             "fee_rate": 0.0,
             "bounds": [0, null]

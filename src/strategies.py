@@ -7,98 +7,55 @@ from src.abstract import _Strategies
 class Strategies(_Strategies):
     def __init__(self, strat_config: dict):
         """
-        Initialise une instance de la classe Strategies avec les paramètres donnés.
+        Initializes an instance of the Strategies class with the given parameters.
 
-        Paramètres :
-        mean_var (dict) : Dictionnaire contenant les données sur les moyennes et variances.
-        strat_config (str) : Chemin vers le fichier de configuration de la stratégie.
-        position (Position) : Objet de position initial.
+        Parameters:
+        strat_config (dict) : Configuration dictionary for the strategy that includes details such as
+                              risk aversion, fee rate, asset weight bounds, etc.
 
-        Cette méthode initialise la classe en chargeant la configuration de la stratégie à partir d'un fichier,
-        et en initialisant les données sur les moyennes et variances ainsi que l'objet de position.
+        This method loads the specified strategy configuration from the configuration dictionary
+        and initializes the inherited _Strategies instance.
         """
         super().__init__(strat_config)
 
     def fit(self, portfolio: Portfolio) -> np.ndarray:
         """
-        Exécute l'algorithme d'optimisation pour ajuster la position.
+        Adjusts the portfolio position using an optimization strategy specified in strat_config.
 
-        Cette méthode utilise les données sur les moyennes et variances ainsi que la configuration de la stratégie
-        pour exécuter un algorithme d'optimisation et ajuster la position en conséquence.
+        Parameters:
+        portfolio (Portfolio) : Portfolio object containing current market data (means, covariances, etc.)
+                                and the current state of the portfolio (weights, capital, etc.).
+
+        Returns:
+        np.ndarray : The new portfolio weights after optimization.
+
+        This method selects the optimization algorithm based on the specified strategy ('mean_var',
+         'max_return', or 'tracking_error') and calculates the optimal new weights for the portfolio.
         """
-        # Prépare les arguments nécessaires pour l'algorithme d'optimisation
-        arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
-               portfolio.pf_config["ref_portfolios"][self.strat_config["ref_assert"]],
-               self.strat_config["tol"], self.strat_config["fee_rate"],
-               self.strat_config["bounds"], portfolio.weights, portfolio.capital,
-               portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]),
-               False, False]
+        if self.strat_config["strategy"] == "mean_var":
+            arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
+                   self.strat_config["aversion"], self.strat_config["fee_rate"],
+                   self.strat_config["bounds"], portfolio.weights, portfolio.capital,
+                   portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]),
+                   False, False]
+            return mean_variance_portfolio(*arg)
 
-        # Exécute l'algorithme d'optimisation pour ajuster la position
-        return tracking_error(*arg)
+        elif self.strat_config["strategy"] == "max_return":
+            arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
+                   self.strat_config["max_vol"], self.strat_config["fee_rate"],
+                   self.strat_config["bounds"], portfolio.weights, portfolio.capital,
+                   portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]),
+                   False, False]
+            return max_return(*arg)
 
+        elif self.strat_config["strategy"] == "tracking_error":
+            arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
+                   portfolio.pf_config["ref_portfolios"][self.strat_config["ref_asset"]],
+                   self.strat_config["tol"], self.strat_config["fee_rate"],
+                   self.strat_config["bounds"], portfolio.weights, portfolio.capital,
+                   portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]),
+                   False, False]
+            return tracking_error(*arg)
 
-class MVStrategies(_Strategies):
-    def __init__(self, strat_config: dict):
-        """
-        Initialise une instance de la classe Strategies avec les paramètres donnés.
-
-        Paramètres :
-        mean_var (dict) : Dictionnaire contenant les données sur les moyennes et variances.
-        strat_config (str) : Chemin vers le fichier de configuration de la stratégie.
-        position (Position) : Objet de position initial.
-
-        Cette méthode initialise la classe en chargeant la configuration de la stratégie à partir d'un fichier,
-        et en initialisant les données sur les moyennes et variances ainsi que l'objet de position.
-        """
-        super().__init__(strat_config)
-
-    def fit(self, portfolio: Portfolio) -> np.ndarray:
-        """
-        Exécute l'algorithme d'optimisation pour ajuster la position.
-
-        Cette méthode utilise les données sur les moyennes et variances ainsi que la configuration de la stratégie
-        pour exécuter un algorithme d'optimisation et ajuster la position en conséquence.
-        """
-        # Prépare les arguments nécessaires pour l'algorithme d'optimisation
-        arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
-               self.strat_config["aversion"], self.strat_config["fee_rate"],
-               self.strat_config["bounds"], portfolio.weights, portfolio.capital,
-               portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]),
-               False, False]
-
-        # Exécute l'algorithme d'optimisation pour ajuster la position
-        return mean_variance_portfolio(*arg)
-
-
-class MaxMeanStrategies(_Strategies):
-    def __init__(self, strat_config: dict):
-        """
-        Initialise une instance de la classe Strategies avec les paramètres donnés.
-
-        Paramètres :
-        mean_var (dict) : Dictionnaire contenant les données sur les moyennes et variances.
-        strat_config (str) : Chemin vers le fichier de configuration de la stratégie.
-        position (Position) : Objet de position initial.
-
-        Cette méthode initialise la classe en chargeant la configuration de la stratégie à partir d'un fichier,
-        et en initialisant les données sur les moyennes et variances ainsi que l'objet de position.
-        """
-        super().__init__(strat_config)
-
-    def fit(self, portfolio: Portfolio) -> np.ndarray:
-        """
-        Exécute l'algorithme d'optimisation pour ajuster la position.
-
-        Cette méthode utilise les données sur les moyennes et variances ainsi que la configuration de la stratégie
-        pour exécuter un algorithme d'optimisation et ajuster la position en conséquence.
-        """
-        # Prépare les arguments nécessaires pour l'algorithme d'optimisation
-        arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
-               self.strat_config["target_vol"], self.strat_config["fee_rate"],
-               self.strat_config["bounds"], portfolio.weights, portfolio.capital,
-               portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]),
-               False, False]
-
-        # Exécute l'algorithme d'optimisation pour ajuster la position
-        return max_return(*arg)
+        else:
+            raise ValueError(f"Unknown strategy: {self.strat_config['strategy']}")

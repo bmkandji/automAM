@@ -11,7 +11,7 @@ class RemotePortfolio:
         self.positions = self.fetch_positions()
         self.open_orders = self.fetch_open_orders()
         self.cash = self.fetch_available_cash()
-        self.total_value = self.calculate_total_value()
+        self.position = self.position()
 
     def fetch_positions(self):
         """
@@ -31,13 +31,40 @@ class RemotePortfolio:
         """
         return self.broker_api.get_available_cash()
 
-    def calculate_total_value(self):
+    def position(self):
         """
-        Calcule la valeur totale du portefeuille, incluant le cash et la valeur des positions.
+        Calculates the weights of each asset, including cash, in the total capital after cancelling all open orders.
+
+        :return: A dictionary with symbols as keys and their respective weights in the total portfolio as values.
         """
+        # Cancel all open orders first to stabilize the portfolio
+        self.broker_api.cancel_all_open_orders()
+
+        # Retrieve current positions and cash balance
+        positions = self.broker_api.get_current_positions()
+        cash = self.broker_api.get_available_cash()
+
+        # If positions are empty and only cash is available
+        if not positions:
+            return {'cash': 1.0}  # 100% cash
+
+        # Retrieve current prices for the assets
+        assets = list(positions.keys())
+        prices = self.broker_api.get_current_prices(assets)
+
+        # Calculate total capital: sum of (price * quantity) for all assets + cash
+        total_capital = cash + sum(prices[symbol] * float(quantity) for symbol, quantity in positions.items())
+
+        # Calculate the weight of each asset including cash
+        portfolio_weights = {'cash': cash / total_capital}
+        for symbol, quantity in positions.items():
+            asset_value = prices[symbol] * float(quantity)
+            portfolio_weights[symbol] = asset_value / total_capital
+
         current_prices = self.broker_api.get_current_prices(self.positions.keys())
-        positions_value = sum(self.positions[asset] * price for asset, price in current_prices.items())
-        return positions_value + self.cash
+        capital = (sum(self.positions[asset] * price for asset, price in current_prices.items())
+                           + self.cash)
+        return {"capital": capital , "weights": portfolio_weights}
 
     def refresh_portfolio(self):
         """
@@ -46,4 +73,4 @@ class RemotePortfolio:
         self.positions = self.fetch_positions()
         self.open_orders = self.fetch_open_orders()
         self.cash = self.fetch_available_cash()
-        self.total_value = self.calculate_total_value()
+        self.position = self.position()

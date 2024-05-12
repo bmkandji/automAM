@@ -22,7 +22,7 @@ def load_configs():
     data_config = load_json_config(r'src/data_settings/data_settings.json')
     model_config = load_json_config(r'src/model_settings/model_settings.json')
     pf_config = load_json_config(r'src/portfolio_settings/pf_settings.json')
-    strat_config = load_json_config('src/strat_settings/strat_settings.json')["traking_error"]
+    strat_config = load_json_config('src/strat_settings/strat_settings.json')["mean_var"]
     return data_config, model_config, pf_config, strat_config
 
 

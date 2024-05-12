@@ -223,3 +223,17 @@ class _BrokerAPI(ABC):
         Annule un ordre spécifique.
         """
         pass
+
+    @abstractmethod
+    def cancel_all_open_orders(self):
+        """
+        Annule tous ls odres ouverts
+        """
+        pass
+
+    @abstractmethod
+    def portfolio_weights(self):
+        """
+        Annule tous ls odres ouverts
+        """
+        pass

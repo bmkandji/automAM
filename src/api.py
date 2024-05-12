@@ -1,6 +1,7 @@
 import alpaca_trade_api as tradeapi
 from abc import ABC
 from src.abstract import _BrokerAPI
+import time
 
 
 class AlpacaBrokerAPI(_BrokerAPI, ABC):
@@ -54,9 +55,9 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         :return: A dictionary mapping each symbol to its current closing price.
         """
         # Fetch the latest minute bar data for all specified assets
-        barset = self.api.get_barset(assets, 'minute', 1)
+        bars = self.api.get_bars(assets, '1Min', limit=1)
         # Extract the last closing price safely checking if data is available
-        prices = {asset: barset[asset][0].c for asset in assets if barset[asset]}
+        prices = {asset: bars[asset][0].c for asset in assets if bars[asset]}
         return prices
 
     def place_order(self, asset, action, quantity):
@@ -90,3 +91,42 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         except Exception as e:
             # Return an error message if cancellation fails
             return f"Failed to cancel order {order_id}. Error: {str(e)}"
+
+    def cancel_all_open_orders(self):
+        """
+        Attempts to cancel all open orders, retrying if some are not initially canceled.
+
+        :return: A list of messages indicating the result of each cancellation attempt.
+        """
+        attempts = 3  # Number of attempts to cancel each order
+        delay = 2  # Delay in seconds before retrying
+
+        # Retrieve all open orders
+        open_orders = self.api.list_orders(status='open')
+        cancellation_results = []
+
+        while attempts > 0 and open_orders:
+            current_orders = open_orders[:]
+            open_orders = []
+
+            for order in current_orders:
+                try:
+                    # Attempt to cancel the order
+                    self.api.cancel_order(order.id)
+                    # Append a success message for each cancellation
+                    cancellation_results.append(f"Order {order.id} has been cancelled successfully.")
+                except Exception as e:
+                    # Append an error message if cancellation fails, matching the format used in cancel_order
+                    cancellation_results.append(f"Failed to cancel order {order.id}. Error: {str(e)}")
+                    open_orders.append(order)  # Add order to list for retry
+
+            attempts -= 1  # Decrement the number of remaining attempts
+            if open_orders and attempts > 0:
+                time.sleep(delay)  # Wait for a few seconds before retrying
+
+        # After all attempts, if there are still open orders that couldn't be canceled
+        if open_orders:
+            for order in open_orders:
+                cancellation_results.append(f"Order {order.id} could not be cancelled after multiple attempts.")
+
+        return cancellation_results

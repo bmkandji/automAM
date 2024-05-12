@@ -6,7 +6,7 @@ from src.abstract import _Data, _Strategies
 from utils.check import check_configs, checks_weights
 from abc import ABC
 from utils import portfolio_tools as pf_t
-
+from src.remote_portfolio import RemotePortfolio
 
 class Position(ABC):
     def __init__(self, capital: float, weights: np.ndarray, date: datetime):
@@ -134,7 +134,7 @@ class Portfolio(Position):
         self._strategies = strategies  # Adjusted to handle multiple strategies
 
     def forward(self, data: _Data, update_weights=True, strategies: _Strategies = None,
-                right_capital_weights: Dict[str, Any] = None,
+                rPortfolio: RemotePortfolio = None,
                 update_ref_pf: bool = True):
         """
         Advances the portfolio, updating weights and returns.
@@ -142,7 +142,7 @@ class Portfolio(Position):
         Args:
             update_weights:
             strategies:
-            right_capital_weights:
+            rPortfolio:
             data:
             update_ref_pf (bool): Flag to determine if reference portfolio weights should be updated.
 
@@ -159,10 +159,10 @@ class Portfolio(Position):
 
         returns = data.window_returns(self.date, data.data_config["end_date"])
         print(f"observed returns: {returns}\n")
-        if right_capital_weights is not None:
-            checks_weights(right_capital_weights["weight"])
-            (self._capital, self._weights) = (right_capital_weights["capital"],
-                                              right_capital_weights["weight"])
+        if rPortfolio is not None:
+            checks_weights(rPortfolio.position["weight"])
+            (self._capital, self._weights) = (rPortfolio.position["capital"],
+                                              rPortfolio.position["weight"])
 
         else:
             past_capital = pf_t.capital_fw(self.next_weights, self.weights,
@@ -200,6 +200,7 @@ class Portfolio(Position):
             raise ValueError("The references portfolios are note updated since many period.")
 
         if update_weights:
+            print(self.metrics)
             self.update_metrics(data)
             strategies = self.strategies if strategies is None else strategies
             self.update_weights(strategies)

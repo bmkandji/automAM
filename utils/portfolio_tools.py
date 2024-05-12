@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import minimize, LinearConstraint
 from utils.cost import transact_cost
 
 
@@ -371,7 +371,7 @@ def mean_variance_portfolio(expected_returns: np.ndarray, covariance_matrix: np.
 
 
 def max_return(expected_returns: np.ndarray, covariance_matrix: np.ndarray,
-               target_vol: list, transaction_fee_rate: float,
+               max_vol: float, transaction_fee_rate: float,
                bounds: list, current_weights: np.ndarray,
                initial_capital: float = 1.0, scale: float = 100, fixed_weights: np.ndarray = None,
                tk_acount_capital: bool = False, tk_acount_scale: bool = False) -> np.ndarray:
@@ -412,15 +412,10 @@ def max_return(expected_returns: np.ndarray, covariance_matrix: np.ndarray,
     # Define the constraint that ensures the sum of weights equals 1, taking into account fixed weights
     constraints = [{'type': 'eq', 'fun': lambda x: sum_to_one_constraint(x, fixed_weights)},
                    {'type': 'ineq', 'fun': lambda x:
-                   portfolio_volatility(merge_weights(x, fixed_weights),
-                                        current_weights, transaction_fee_rate,
-                                        covariance_matrix, initial_capital, scale,
-                                        tk_acount_capital, tk_acount_scale) - target_vol[0] / np.sqrt(255)},
-                   {'type': 'ineq', 'fun': lambda x:
-                   target_vol[1] / np.sqrt(255) - portfolio_volatility(merge_weights(x, fixed_weights),
-                                                                       current_weights, transaction_fee_rate,
-                                                                       covariance_matrix, initial_capital, scale,
-                                                                       tk_acount_capital, tk_acount_scale)
+                   max_vol - portfolio_volatility(merge_weights(x, fixed_weights),
+                                                        current_weights, transaction_fee_rate,
+                                                        covariance_matrix, initial_capital, scale,
+                                                        tk_acount_capital, tk_acount_scale)
                     }
                    ]
 
@@ -476,8 +471,12 @@ def tracking_error(expected_returns: np.ndarray, covariance_matrix: np.ndarray,
     # Initial guess for tradable assets, filtering out the fixed weights
     initial_guess = current_weights[fixed_weights[0] == 0]
 
+    A_eq = np.array([[1] * num_traded_assets])
+    b_eq = np.array([1 - sum(fixed_weights[1][fixed_weights[0] == 1])])
+    linear_constraint_eq = LinearConstraint(A_eq, b_eq, b_eq)
+
     # Define the constraint that ensures the sum of weights equals 1, taking into account fixed weights
-    constraints = [{'type': 'eq', 'fun': lambda x: sum_to_one_constraint(x, fixed_weights)},
+    constraints = [linear_constraint_eq,
                    {'type': 'ineq', 'fun': lambda x:
                    tol - portfolio_volatility_mix(merge_weights(x, fixed_weights),
                                                   current_weights, ref_portfolio["next_weights"],
