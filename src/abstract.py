@@ -40,7 +40,6 @@ class _Model(ABC):
         if self.metrics["fit_date"]:
 
             check_update = (data.data_config["end_date"] - self.metrics["fit_date"]).days
-            print(check_update)
             if check_update <= 0 or self._metrics['scale'] != data.data_config["scale"]:
                 raise ValueError("Please use recent data or same scale.")
 
@@ -65,7 +64,7 @@ class _Data(ABC):
     @property
     def data(self) -> pd.DataFrame:
         # Propriété pour accéder en lecture à la configuration des données
-        key, value = next(iter(self.data_config["currency"].items()))
+        key, value = next(iter(self.data_config["cash"].items()))
         data = self._data.copy()
         data.insert(0, key, value)
         return data
@@ -84,13 +83,28 @@ class _Data(ABC):
         """
         pass
 
-    @abstractmethod
     def update_data(self, new_end_date: datetime = None):
         """
         Méthode abstraite pour mettre à jour les données jusqu'à une nouvelle date de fin.
         La date de fin est optionnelle; si non spécifiée, peut-être mise à jour jusqu'à la date courante.
         """
-        pass
+        if self.data.empty:
+            raise ValueError("please fetch before update")
+
+        if self.data_config["end_date"] >= new_end_date:
+            raise ValueError("The please provide recent date for update")
+
+        if new_end_date is None:
+            new_end_date = datetime.today().strftime('%Y-%m-%d')
+        start_date_update = self._data.index.max()
+        new_rows_added = self.fetch_data(start_date_update, new_end_date)
+
+        # Remove the same number of oldest rows as new rows added
+        if len(self._data) > new_rows_added:
+            self._data = self._data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
+            self._data_config["start_date"] = self._data.index.min()
+
+        self._metrics = {}
 
     def update_metrics(self, model: _Model) -> None:
         """
@@ -103,9 +117,44 @@ class _Data(ABC):
             **model.metrics  # Intégration des métriques du modèle aux métriques des données
         }
 
-    @abstractmethod
     def window_returns(self, start_date: datetime, end_date: datetime) -> np.ndarray:
-        pass
+        """
+        Filter the instance's DataFrame based on a date range, exclusive of the start date and inclusive of the end date,
+        and return an array containing the sum of each column in the filtered DataFrame.
+
+        Args:
+        - start_date (datetime): The start date, exclusive.
+        - end_date (datetime): The end date, inclusive.
+
+        Returns:
+        - np.ndarray: An array containing the sum of each column from the filtered DataFrame.
+
+        Raises:
+        - ValueError: If no data is available for the given date range.
+        """
+        # Ensure the index is in datetime format and filter the DataFrame
+        self._data.index = pd.to_datetime(self._data.index)
+        filtered_df = self.data.loc[(self._data.index > start_date) & (self._data.index <= end_date)]
+
+        # Check if the filtered DataFrame is empty
+        if filtered_df.empty:
+            raise ValueError(f"No data available from {start_date} to {end_date}.")
+
+        return filtered_df.sum()
+
+    def replace_NA(self, window: int = 5) -> None:
+        """
+        Replaces NA values in the DataFrame with the rolling mean calculated over a specified window size.
+
+        Parameters:
+        window (int): The size of the rolling window to calculate the means, default is 5.
+        """
+        # Calculate the rolling mean with a specified window, minimum number of observations in the window required
+        # to have a value is 1
+        roll_means = self._data.rolling(window=window, min_periods=1, center=True).mean()
+
+        # Replace NA values in the DataFrame with the calculated rolling means
+        self._data.fillna(roll_means, inplace=True)
 
 
 # Définition de la classe abstraite _Strategies

@@ -6,8 +6,10 @@ def checks_weights(weights: np.ndarray):
         raise ValueError("weights must sum to 1.")
 
 
-def check_configs(portfolio=None, data=None, model=None,
-                  check_date: bool = True, check_scale: bool = False, check_fit_date: bool = True):
+def check_configs(portfolio=None, data=None,
+                  model=None, check_date: bool = True,
+                  check_scale: bool = False,
+                  check_fit_date: bool = True):
     """
     Validates the consistency of configuration details among any provided combinations
     of portfolio, data, and model configurations. This function checks if all provided

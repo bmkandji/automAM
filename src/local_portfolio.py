@@ -129,12 +129,14 @@ class Portfolio(Position):
         if "model" not in self.metrics:
             raise ValueError("The portfolio metrics are empty or incomplete, please update with trained data.")
         next_weights = strategies.fit(self)
+        print(next_weights)
         checks_weights(next_weights)  # Check sum to 1
         self._next_weights = next_weights
         self._strategies = strategies  # Adjusted to handle multiple strategies
 
     def forward(self, data: _Data, update_weights=True, strategies: _Strategies = None,
-                right_capital_weights: Dict[str, Any] = None, update_ref_pf: bool = True):
+                right_capital_weights: Dict[str, Any] = None,
+                update_ref_pf: bool = True):
         """
         Advances the portfolio, updating weights and returns.
 
@@ -149,7 +151,9 @@ class Portfolio(Position):
             ValueError: For invalid dates, missing strategies, or un-updated returns.
         """
 
-        check_configs(portfolio=self, data=data, check_date=False, check_fit_date= False)
+        check_configs(portfolio=self, data=data,
+                      check_date=False, check_scale=True,
+                      check_fit_date=False)
 
         if not (data.data_config["start_date"] <= self.date < data.data_config["end_date"]):
             raise ValueError("The data does not cover the required period for the portfolio.")

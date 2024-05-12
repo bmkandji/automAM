@@ -1,3 +1,8 @@
+from configs.root_config import set_project_root
+
+# Configure the path to the project root
+set_project_root()
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -14,17 +19,17 @@ import matplotlib.dates as mdates
 
 # Load configurations
 def load_configs():
-    data_config = load_json_config(r'/src/data_settings/data_settings.json')
-    model_config = load_json_config(r'/src/model_settings/model_settings.json')
-    pf_config = load_json_config(r'/src/portfolio_settings/pf_settings.json')
-    strat_config = load_json_config(r'/src/strat_settings/strat_settings.json')
+    data_config = load_json_config(r'src/data_settings/data_settings.json')
+    model_config = load_json_config(r'src/model_settings/model_settings.json')
+    pf_config = load_json_config(r'src/portfolio_settings/pf_settings.json')
+    strat_config = load_json_config('src/strat_settings/strat_settings.json')["max_return"]
     return data_config, model_config, pf_config, strat_config
 
 
 # Initialize data, model, portfolio, and strategy
 def initialize_components(data_config, model_config, pf_config, strat_config):
     data = Data(data_config)
-    data.fetch_data(dt.datetime(2008, 1, 1), dt.datetime(2018, 1, 3))
+    data.fetch_data(dt.datetime(2005, 1, 1), dt.datetime(2018, 1, 3))
     model = Model(model_config)
     horizon = dt.datetime(2018, 1, 10)
     model.fit_fcast(data, horizon)

@@ -1,9 +1,9 @@
 {
-    "symbols": ["AAPL", "GOOGL", "MSFT"],
-    "api_key": null,
+    "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"],
+    "api_key": "AKLV1H5N2WJ83Y5A4ESO",
     "api_secret": null,
-    "base_url": "https://paper-api.alpaca.markets",
+    "base_url": "https://api.alpaca.markets",
     "api_version": "v2",
     "scale": 100,
-    "currency": {"USD":  0.0}
+    "cash": {"USD":  0.0}
 }

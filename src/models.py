@@ -168,7 +168,7 @@ class Model(_Model):
         mean = weighting(means, scheme=self._model_config['model_config']["weights"])
         covariance = weighting(covariances, scheme=self._model_config['model_config']["weights"])
 
-        _, value = next(iter(data.data_config["currency"].items()))
+        _, value = next(iter(data.data_config["cash"].items()))
         mean = np.insert(mean, 0, value)
         covariance = np.insert(np.insert(covariance, 0, 0, axis=1), 0, 0, axis=0)
 

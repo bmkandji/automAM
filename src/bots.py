@@ -54,17 +54,3 @@ class PortfolioManager:
             if (order_type == 'BUY' and current_value > target_value) or (
                     order_type == 'SELL' and current_value < target_value):
                 self.broker_api.cancel_order(order['id'])
-
-    def calculate_optimal_weights(self):
-        """
-        Méthode fictive pour calculer les poids optimaux, à implémenter selon la stratégie.
-        """
-        # Logique pour calculer et retourner un dictionnaire de poids optimaux
-        return {}
-
-    def rebalance_portfolio(self):
-        """
-        Déclenche un rééquilibrage complet du portefeuille.
-        """
-        optimal_weights = self.calculate_optimal_weights()
-        self.update_portfolio_weights(optimal_weights)

@@ -1,5 +1,6 @@
 from src.abstract import _BrokerAPI
 
+
 class RemotePortfolio:
     def __init__(self, broker_api: _BrokerAPI):
         """
@@ -46,21 +47,3 @@ class RemotePortfolio:
         self.open_orders = self.fetch_open_orders()
         self.cash = self.fetch_available_cash()
         self.total_value = self.calculate_total_value()
-
-    def place_order(self, asset, action, quantity):
-        """
-        Place un ordre sur le marché via l'API du broker.
-        :param asset: L'actif pour lequel l'ordre doit être placé.
-        :param action: 'BUY' ou 'SELL'.
-        :param quantity: La quantité à acheter ou vendre.
-        """
-        self.broker_api.place_order(asset, action, quantity)
-        self.refresh_portfolio()  # Refresh après placement d'ordre pour actualiser le portefeuille.
-
-    def cancel_order(self, order_id):
-        """
-        Annule un ordre spécifique.
-        :param order_id: L'identifiant de l'ordre à annuler.
-        """
-        self.broker_api.cancel_order(order_id)
-        self.refresh_portfolio()  # Refresh après annulation pour actualiser le portefeuille.

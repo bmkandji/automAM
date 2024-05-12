@@ -1,8 +1,13 @@
 {
-    "symbols": ["AAPL", "GOOGL", "MSFT"],
+    "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"],
     "start_date": null,
     "end_date": null,
-    "provider": "yfinance",
+    "api_config": {
+                "api_key": "AKLV1H5N2WJ83Y5A4ESO",
+                "api_secret": null,
+                "base_url": "https://api.alpaca.markets",
+                "api_version": "v2"
+                    },
     "scale": 100,
-    "currency": {"USD":  0.0}
+    "cash": {"USD":  0.0}
 }

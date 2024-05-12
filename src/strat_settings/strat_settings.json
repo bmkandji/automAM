@@ -1,6 +1,15 @@
 {
-    "strategies": "mean_var",
-    "aversion": 5,
-    "fee_rate": 0.0,
-    "bounds": [0, null]
+    "mean_var":
+        {
+            "strategies": "mean_var",
+            "aversion": 5,
+            "fee_rate": 0.0,
+            "bounds": [0, null]
+        },
+    "max_return" :         {
+            "strategies": "max_return",
+            "target_vol": [0.55,0.75],
+            "fee_rate": 0.0,
+            "bounds": [0, null]
+        }
 }

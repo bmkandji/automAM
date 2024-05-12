@@ -1,26 +1,32 @@
 {
-    "symbols": ["AAPL", "GOOGL", "MSFT"],
-    "fixed_weights" : [[1, 0, 0, 0],[0, 0, 0, 0]],
+    "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"],
+    "fixed_weights" : [[1, 0, 0, 0, 0.0],[0, 0, 0, 0, 0.0]],
     "ref_portfolios": {
         "AAPL": {
             "capital": null,
-            "next_weights": [0.0, 1.0, 0.0, 0.0],
+            "next_weights": [0.0, 1.0, 0.0, 0.0, 0.0],
             "weights": null
         },
         "GOOGL": {
             "capital": null,
-            "next_weights": [0.0, 0.0, 1.0, 0.0],
+            "next_weights": [0.0, 0.0, 1.0, 0.0, 0.0],
             "weights": null
         },
         "MSFT": {
             "capital": null,
-            "next_weights": [0.0, 0.0, 0.0, 1.0],
+            "next_weights": [0.0, 0.0, 0.0, 1.0, 0.0],
+            "weights": null
+
+        },
+        "^GSPC": {
+            "capital": null,
+            "next_weights": [0.0, 0.0, 0.0, 0.0, 1.0],
             "weights": null
 
         },
         "Eq_weighted": {
             "capital": null,
-            "next_weights": [0.25, 0.25, 0.25, 0.25],
+            "next_weights": [0.25, 0.25, 0.25, 0.25, 0.0],
             "weights": null
 
         }

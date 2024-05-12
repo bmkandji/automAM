@@ -1,11 +1,11 @@
 {
-    "symbols": ["AAPL", "GOOGL", "MSFT"],
+    "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"],
     "model_config": {
         "model_path": "C:/Users/MatarKANDJI/automAM/src/model_settings/dcc_model_coef.rds",
         "model": "sGARCH",
-        "armaOrder": [3, 2],
+        "armaOrder": [5, 1],
         "distribution_garch": "norm",
-        "dccOrder": [1, 2],
+        "dccOrder": [2, 1],
         "distribution_dcc": "mvt",
         "weights": "uniform",
         "recalib" : 5

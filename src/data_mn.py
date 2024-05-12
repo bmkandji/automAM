@@ -1,9 +1,9 @@
-import pandas as pd
-import numpy as np
 import yfinance as yf
-from datetime import datetime
 from src.common import compute_log_returns
 from src.abstract import _Data
+import alpaca_trade_api as tradeapi
+import pandas as pd
+from datetime import datetime, timedelta
 
 
 class Data(_Data):
@@ -58,68 +58,69 @@ class Data(_Data):
         self._data_config["start_date"] = self._data.index.min()
         return 0
 
-    def update_data(self, new_end_date: datetime = None):
+
+class AlpacaData(_Data):
+    def __init__(self, data_config: dict):
         """
-        Updates the internal DataFrame by fetching new data from the day after the last recorded end date to a new end
-        date, and removes an equal number of old data rows from the start.
+        Initialize the Data object with stock config.
 
         Parameters:
-        new_end_date (str, optional): The end date for the new data fetch (format: 'YYYY-MM-DD'). Defaults to today's
-        date.
+        data_config (str): Path to the data configuration file.
         """
-        if self.data.empty:
-            raise ValueError("please fetch before update")
+        super().__init__(data_config)
+        self.api = tradeapi.REST(
+            data_config["api_config"]['api_key'],
+            data_config["api_config"]['api_secret'],
+            data_config["api_config"]['base_url'],
+            api_version='v2'
+        )
 
-        if self.data_config["end_date"] >= new_end_date:
-            raise ValueError("The please provide recent date for update")
-
-        if new_end_date is None:
-            new_end_date = datetime.today().strftime('%Y-%m-%d')
-        start_date_update = self._data.index.max()
-        new_rows_added = self.fetch_data(start_date_update, new_end_date)
-
-        # Remove the same number of oldest rows as new rows added
-        if len(self._data) > new_rows_added:
-            self._data = self._data.iloc[new_rows_added:]  # Keeps the DataFrame size consistent
-            self._data_config["start_date"] = self._data.index.min()
-
-        self._metrics = {}
-
-    def window_returns(self, start_date: datetime, end_date: datetime) -> np.ndarray:
+    def fetch_data(self, start_date: datetime, end_date: datetime) -> int:
         """
-        Filter the instance's DataFrame based on a date range, exclusive of the start date and inclusive of the end date,
-        and return an array containing the sum of each column in the filtered DataFrame.
+        Fetches the daily closing prices for a list of stock symbols over a specified date range using Alpaca API,
+        calculates log returns, applies a rolling mean to handle NA values, and appends the data to the internal DataFrame.
+        Adjusts the date range internally to include the end date.
 
-        Args:
-        - start_date (datetime): The start date, exclusive.
-        - end_date (datetime): The end date, inclusive.
+        Parameters:
+        start_date (datetime): The starting date of the period.
+        end_date (datetime): The ending date of the period, adjusted to be inclusive.
 
         Returns:
-        - np.ndarray: An array containing the sum of each column from the filtered DataFrame.
-
-        Raises:
-        - ValueError: If no data is available for the given date range.
+        int: The number of new rows added to the DataFrame after processing.
         """
-        # Ensure the index is in datetime format and filter the DataFrame
-        self._data.index = pd.to_datetime(self._data.index)
-        filtered_df = self.data.loc[(self._data.index > start_date) & (self._data.index <= end_date)]
+        new_data = pd.DataFrame()
 
-        # Check if the filtered DataFrame is empty
-        if filtered_df.empty:
-            raise ValueError(f"No data available from {start_date} to {end_date}.")
+        # Adjust end_date to be inclusive and format dates
+        formatted_start_date = (start_date-timedelta(days=1)).strftime('%Y-%m-%d')
+        formatted_end_date = end_date.strftime('%Y-%m-%d')
 
-        return filtered_df.sum()
+        for symbol in self.data_config["symbols"]:
+            try:
+                # Fetch stock data from Alpaca API using get_bars
+                bars = self.api.get_bars(symbol, tradeapi.TimeFrame.Day,
+                                         formatted_start_date, formatted_end_date,
+                                         adjustment='raw').df
 
-    def replace_NA(self, window: int = 5) -> None:
-        """
-        Replaces NA values in the DataFrame with the rolling mean calculated over a specified window size.
+                # Create a temporary DataFrame to store the close prices
+                if not bars.empty:
+                    temp_data = pd.DataFrame({
+                        'Date': bars.index.date,
+                        'Close': bars['close'],
+                        'Symbol': symbol
+                    })
+                    new_data = pd.concat([new_data, temp_data])
+            except Exception as e:
+                print(f"Error fetching data for {symbol}: {e}")
 
-        Parameters:
-        window (int): The size of the rolling window to calculate the means, default is 5.
-        """
-        # Calculate the rolling mean with a specified window, minimum number of observations in the window required
-        # to have a value is 1
-        roll_means = self._data.rolling(window=window, min_periods=1, center=True).mean()
-
-        # Replace NA values in the DataFrame with the calculated rolling means
-        self._data.fillna(roll_means, inplace=True)
+        if not new_data.empty:
+            new_data.set_index('Date', inplace=True)
+            new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close')[self.data_config["symbols"]], self._data_config["scale"])
+            initial_data_length = len(self._data)
+            new_data.index = pd.to_datetime(new_data.index)
+            self._data = pd.concat([self._data, new_data]).drop_duplicates()
+            self.replace_NA()
+            self._data_config["end_date"] = self._data.index.max()
+            new_data_length = len(self._data) - initial_data_length
+            return new_data_length
+        self._data_config["start_date"] = self._data.index.min()
+        return 0
