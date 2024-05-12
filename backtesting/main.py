@@ -92,7 +92,7 @@ def dynamic_plotting(date_list, portfolio, data, model):
         ax.relim()
         ax.autoscale_view()
         plt.draw()
-        plt.pause(0.05)
+        plt.pause(0.1)
 
     plt.ioff()  # Turn off interactive mode
     plt.show()  # Show the final plot

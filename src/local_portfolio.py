@@ -129,7 +129,6 @@ class Portfolio(Position):
         if "model" not in self.metrics:
             raise ValueError("The portfolio metrics are empty or incomplete, please update with trained data.")
         next_weights = strategies.fit(self)
-        print(next_weights)
         checks_weights(next_weights)  # Check sum to 1
         self._next_weights = next_weights
         self._strategies = strategies  # Adjusted to handle multiple strategies
@@ -159,7 +158,7 @@ class Portfolio(Position):
             raise ValueError("The data does not cover the required period for the portfolio.")
 
         returns = data.window_returns(self.date, data.data_config["end_date"])
-        print(returns)
+        print(f"observed returns: {returns}")
         if right_capital_weights is not None:
             checks_weights(right_capital_weights["weight"])
             (self._capital, self._weights) = (right_capital_weights["capital"],
@@ -172,7 +171,7 @@ class Portfolio(Position):
             self._capital, self._weights = pf_t.fw_portfolio_value(self.next_weights,
                                                                    returns, past_capital,
                                                                    self.metrics["scale"])
-            print(self.capital, self.weights)
+            print(f"capital: {self.capital}, weight: {self.weights}")
 
         self._date = data.data_config["end_date"]
 

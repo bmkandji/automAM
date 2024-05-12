@@ -347,12 +347,12 @@ def max_return(expected_returns: np.ndarray, covariance_matrix: np.ndarray,
                    portfolio_volatility(merge_weights(x, fixed_weights),
                                         current_weights, transaction_fee_rate,
                                         covariance_matrix, initial_capital, scale,
-                                        tk_acount_capital, tk_acount_scale) - target_vol[0]},
+                                        tk_acount_capital, tk_acount_scale) - target_vol[0] / np.sqrt(255)},
                    {'type': 'ineq', 'fun': lambda x:
-                   target_vol[1] - portfolio_volatility(merge_weights(x, fixed_weights),
-                                                        current_weights, transaction_fee_rate,
-                                                        covariance_matrix, initial_capital, scale,
-                                                        tk_acount_capital, tk_acount_scale)
+                   target_vol[1] / np.sqrt(255) - portfolio_volatility(merge_weights(x, fixed_weights),
+                                                                       current_weights, transaction_fee_rate,
+                                                                       covariance_matrix, initial_capital, scale,
+                                                                       tk_acount_capital, tk_acount_scale)
                     }
                    ]
 
@@ -365,6 +365,5 @@ def max_return(expected_returns: np.ndarray, covariance_matrix: np.ndarray,
     # Optimize the portfolio
     result = minimize(objective, initial_guess, method='SLSQP',
                       bounds=bounds, constraints=constraints)
-    print(result)
     # Combine the optimized tradable weights with the fixed weights and return
     return merge_weights(result.x, fixed_weights)
