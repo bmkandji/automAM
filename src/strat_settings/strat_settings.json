@@ -18,5 +18,12 @@
             "ref_assert": "^GSPC",
             "fee_rate": 0.0,
             "bounds": [0, null]
-        }
+        },
+    "vol_targeting" :        {
+          "strategy": "vol_targeting",
+          "target_vol": 0.5,
+          "ref_portfolio": "^GSPC",
+          "fee_rate": 0.0,
+          "bounds": [-1, 1]
+      }
 }

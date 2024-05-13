@@ -8,6 +8,7 @@ from abc import ABC
 from utils import portfolio_tools as pf_t
 from src.remote_portfolio import RemotePortfolio
 
+
 class Position(ABC):
     def __init__(self, capital: float, weights: np.ndarray, date: datetime):
         """
@@ -133,8 +134,9 @@ class Portfolio(Position):
         self._next_weights = next_weights
         self._strategies = strategies  # Adjusted to handle multiple strategies
 
-    def forward(self, data: _Data, update_weights=True, strategies: _Strategies = None,
-                rPortfolio: RemotePortfolio = None,
+    def forward(self, data: _Data, update_weights=True,
+                strategies: _Strategies = None,
+                rem_portfolio: RemotePortfolio = None,
                 update_ref_pf: bool = True):
         """
         Advances the portfolio, updating weights and returns.
@@ -142,7 +144,7 @@ class Portfolio(Position):
         Args:
             update_weights:
             strategies:
-            rPortfolio:
+            rem_portfolio:
             data:
             update_ref_pf (bool): Flag to determine if reference portfolio weights should be updated.
 
@@ -159,10 +161,10 @@ class Portfolio(Position):
 
         returns = data.window_returns(self.date, data.data_config["end_date"])
         print(f"observed returns: {returns}\n")
-        if rPortfolio is not None:
-            checks_weights(rPortfolio.position["weight"])
-            (self._capital, self._weights) = (rPortfolio.position["capital"],
-                                              rPortfolio.position["weight"])
+        if rem_portfolio is not None:
+            checks_weights(rem_portfolio.position["weight"])
+            (self._capital, self._weights) = (rem_portfolio.position["capital"],
+                                              rem_portfolio.position["weight"])
 
         else:
             past_capital = pf_t.capital_fw(self.next_weights, self.weights,

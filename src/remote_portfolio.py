@@ -1,48 +1,77 @@
 from src.abstract import _BrokerAPI
-
+from typing import Dict, Any
 
 class RemotePortfolio:
     def __init__(self, broker_api: _BrokerAPI):
         """
-        Initialise le portefeuille distant avec une référence à l'API du broker.
-        :param broker_api: Une instance de l'API du broker pour interroger et agir sur le compte de trading.
-        """
-        self.broker_api = broker_api
-        self.positions = self.fetch_positions()
-        self.open_orders = self.fetch_open_orders()
-        self.cash = self.fetch_available_cash()
-        self.position = self.position()
+        Initializes the remote portfolio with a reference to the broker's API.
 
-    def fetch_positions(self):
+        :param broker_api: An instance of the broker's API to query and act on the trading account.
         """
-        Récupère les positions actuelles du portefeuille à partir de l'API du broker.
-        """
-        return self.broker_api.get_current_positions()
+        self._broker_api = broker_api  # Stores the broker API instance
+        self._positions = None  # Initializes positions to None
+        self._open_orders = None  # Initializes open orders to None
+        self._cash = None  # Initializes available cash to None
+        self._position = None  # Initializes calculated position to None
+        self.refresh_portfolio()  # Refreshes portfolio data
 
-    def fetch_open_orders(self):
+    @property
+    def broker_api(self) -> _BrokerAPI:
         """
-        Récupère tous les ordres ouverts à partir de l'API du broker.
-        """
-        return self.broker_api.get_open_orders()
+        Returns the broker API instance.
 
-    def fetch_available_cash(self):
+        :return: The broker API instance.
         """
-        Récupère la quantité de cash disponible dans le portefeuille.
-        """
-        return self.broker_api.get_available_cash()
+        return self._broker_api
 
-    def position(self):
+    @property
+    def positions(self) -> Dict[str, Any]:
         """
-        Calculates the weights of each asset, including cash, in the total capital after cancelling all open orders.
+        Retrieves the current positions in the portfolio.
+
+        :return: A dictionary of current positions.
+        """
+        return self._positions
+
+    @property
+    def open_orders(self) -> Any:
+        """
+        Retrieves all open orders.
+
+        :return: The list of open orders.
+        """
+        return self._open_orders
+
+    @property
+    def cash(self) -> float:
+        """
+        Retrieves the amount of available cash in the portfolio.
+
+        :return: The amount of available cash.
+        """
+        return self._cash
+
+    @property
+    def position(self) -> Dict[str, Any]:
+        """
+        Calculates the weights of each asset, including cash, in the total capital after canceling all open orders.
+
+        :return: A dictionary with symbols as keys and their respective weights in the total portfolio as values.
+        """
+        return self._position
+
+    def calculate_position(self) -> Dict[str, Any]:
+        """
+        Calculates the weights of each asset, including cash, in the total capital after canceling all open orders.
 
         :return: A dictionary with symbols as keys and their respective weights in the total portfolio as values.
         """
         # Cancel all open orders first to stabilize the portfolio
-        self.broker_api.cancel_all_open_orders()
+        self._broker_api.cancel_all_open_orders()
 
         # Retrieve current positions and cash balance
-        positions = self.broker_api.get_current_positions()
-        cash = self.broker_api.get_available_cash()
+        positions = self._broker_api.get_current_positions()
+        cash = self._broker_api.get_available_cash()
 
         # If positions are empty and only cash is available
         if not positions:
@@ -50,7 +79,7 @@ class RemotePortfolio:
 
         # Retrieve current prices for the assets
         assets = list(positions.keys())
-        prices = self.broker_api.get_current_prices(assets)
+        prices = self._broker_api.get_current_prices(assets)
 
         # Calculate total capital: sum of (price * quantity) for all assets + cash
         total_capital = cash + sum(prices[symbol] * float(quantity) for symbol, quantity in positions.items())
@@ -61,16 +90,15 @@ class RemotePortfolio:
             asset_value = prices[symbol] * float(quantity)
             portfolio_weights[symbol] = asset_value / total_capital
 
-        current_prices = self.broker_api.get_current_prices(self.positions.keys())
-        capital = (sum(self.positions[asset] * price for asset, price in current_prices.items())
-                           + self.cash)
-        return {"capital": capital , "weights": portfolio_weights}
+        # Calculate total capital considering current prices
+        current_prices = self._broker_api.get_current_prices(self.positions.keys())
+        capital = sum(self.positions[asset] * price for asset, price in current_prices.items()) + self.cash
+        return {"capital": capital, "weights": portfolio_weights}
 
-    def refresh_portfolio(self):
+    def refresh_portfolio(self) -> None:
         """
-        Met à jour les informations du portefeuille en récupérant les dernières données.
+        Updates the portfolio information by retrieving the latest data from the broker's API.
         """
-        self.positions = self.fetch_positions()
-        self.open_orders = self.fetch_open_orders()
-        self.cash = self.fetch_available_cash()
-        self.position = self.position()
+        self._positions = self._broker_api.get_current_positions()  # Updates positions
+        self._open_orders = self._broker_api.get_open_orders()  # Updates open orders
+        self._cash = self._broker_api.get_available_cash()  # Updates available cash

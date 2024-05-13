@@ -413,9 +413,9 @@ def max_return(expected_returns: np.ndarray, covariance_matrix: np.ndarray,
     constraints = [{'type': 'eq', 'fun': lambda x: sum_to_one_constraint(x, fixed_weights)},
                    {'type': 'ineq', 'fun': lambda x:
                    max_vol - portfolio_volatility(merge_weights(x, fixed_weights),
-                                                        current_weights, transaction_fee_rate,
-                                                        covariance_matrix, initial_capital, scale,
-                                                        tk_acount_capital, tk_acount_scale)
+                                                  current_weights, transaction_fee_rate,
+                                                  covariance_matrix, initial_capital, scale,
+                                                  tk_acount_capital, tk_acount_scale)
                     }
                    ]
 

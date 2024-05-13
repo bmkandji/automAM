@@ -1,25 +1,35 @@
 import alpaca_trade_api as tradeapi
 from abc import ABC
+from typing import List, Dict, Union
 from src.abstract import _BrokerAPI
 import time
 
 
 class AlpacaBrokerAPI(_BrokerAPI, ABC):
-    def __init__(self, api_config: dict):
+    def __init__(self, api_config: Dict[str, str]):
         """
         Initialize the Alpaca API client with user credentials.
 
         :param api_config: A dictionary containing API key, secret, base URL, and API version.
         """
-        # Initialize the Alpaca trading API client
-        self.api = tradeapi.REST(
+        # Initialize the internal _api attribute
+        self._api = tradeapi.REST(
             api_config["api_key"],
             api_config["api_secret"],
             api_config["base_url"],
             api_config["api_version"]
         )
 
-    def get_current_positions(self):
+    @property
+    def api(self) -> tradeapi.REST:
+        """
+        Property method to access the Alpaca trading API client.
+
+        :return: The Alpaca trading API client.
+        """
+        return self._api
+
+    def get_current_positions(self) -> Dict[str, str]:
         """
         Retrieves all current open positions from the Alpaca account.
 
@@ -28,7 +38,7 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         # Fetch and return the current open positions in a dictionary format
         return {pos.symbol: pos.qty for pos in self.api.list_positions()}
 
-    def get_open_orders(self):
+    def get_open_orders(self) -> List[tradeapi.entity.Order]:
         """
         Fetches all open orders from the Alpaca account.
 
@@ -37,7 +47,7 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         # Return a list of all open orders
         return self.api.list_orders(status='open')
 
-    def get_available_cash(self):
+    def get_available_cash(self) -> float:
         """
         Gets the available cash balance in the Alpaca trading account.
 
@@ -47,7 +57,7 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         account = self.api.get_account()
         return float(account.cash)
 
-    def get_current_prices(self, assets):
+    def get_current_prices(self, assets: List[str]) -> Dict[str, float]:
         """
         Retrieves the latest closing prices for a specified list of asset symbols using a single API call.
 
@@ -60,24 +70,53 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         prices = {asset: bars[asset][0].c for asset in assets if bars[asset]}
         return prices
 
-    def place_order(self, asset, action, quantity):
+    def get_total_portfolio_value(self) -> float:
         """
-        Places a market order through the Alpaca API.
+        Calculates the total value of the portfolio, including current positions and available cash.
 
-        :param asset: The symbol for the asset to trade (e.g., 'AAPL').
-        :param action: 'buy' or 'sell'.
-        :param quantity: The number of shares to buy or sell.
+        :return: Total portfolio value.
         """
-        # Submit a market order to buy or sell the specified quantity of the asset
-        self.api.submit_order(
-            symbol=asset,
-            qty=quantity,
-            side=action,
-            type='market',
-            time_in_force='gtc'
-        )
+        current_positions = self.get_current_positions()
+        current_prices = self.get_current_prices(list(current_positions.keys()))
+        current_cash = self.get_available_cash()
 
-    def cancel_order(self, order_id):
+        total_portfolio_value = sum(
+            float(current_positions[asset]) * current_prices[asset] for asset in current_positions) + current_cash
+
+        return total_portfolio_value
+
+    def place_orders(self, orders: List[Dict[str, Union[str, float]]]) -> List[str]:
+        """
+        Places multiple market orders through the Alpaca API based on weights relative to the total portfolio value.
+
+        :param orders: A list of orders, each represented as a dictionary with 'asset', 'action', and 'weight'.
+        :return: A list of messages indicating the result of each order placement.
+        """
+        results = []
+        total_portfolio_value = self.get_total_portfolio_value()
+
+        for order in orders:
+            asset = order['asset']
+            action = order['action']
+            weight = order['weight']
+            current_prices = self.get_current_prices([asset])
+            quantity = (weight * total_portfolio_value) / current_prices[asset]
+
+            try:
+                self.api.submit_order(
+                    symbol=asset,
+                    qty=quantity,
+                    side=action,
+                    type='market',
+                    time_in_force='gtc'
+                )
+                results.append(f"Order to {action} {quantity} shares of {asset} placed successfully.")
+            except Exception as e:
+                results.append(f"Failed to place order to {action} {quantity} shares of {asset}. Error: {str(e)}")
+
+        return results
+
+    def cancel_order(self, order_id: str) -> str:
         """
         Attempts to cancel an order with the given ID.
 
@@ -92,7 +131,7 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
             # Return an error message if cancellation fails
             return f"Failed to cancel order {order_id}. Error: {str(e)}"
 
-    def cancel_all_open_orders(self):
+    def cancel_all_open_orders(self) -> List[str]:
         """
         Attempts to cancel all open orders, retrying if some are not initially canceled.
 
