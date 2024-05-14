@@ -211,7 +211,7 @@ class _BrokerAPI(ABC):
         pass
 
     @abstractmethod
-    def place_order(self, asset, action, quantity):
+    def place_orders(self, asset, action, quantity):
         """
         Place un ordre sur le marché.
         """
@@ -226,13 +226,6 @@ class _BrokerAPI(ABC):
 
     @abstractmethod
     def cancel_all_open_orders(self):
-        """
-        Annule tous ls odres ouverts
-        """
-        pass
-
-    @abstractmethod
-    def portfolio_weights(self):
         """
         Annule tous ls odres ouverts
         """

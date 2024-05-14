@@ -2,7 +2,7 @@
     "mean_var":
         {
             "strategy": "mean_var",
-            "aversion": 5,
+            "aversion": 0,
             "fee_rate": 0.0,
             "bounds": [0, null]
         },

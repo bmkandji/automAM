@@ -6,13 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="ecfb871f-68a4-4833-b885-b871ed5eb1cd" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backtesting/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backtesting/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/abstract.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/abstract.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bots.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/bots.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/local_portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/local_portfolio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/api_settings/api_settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/api_settings/api_settings.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/model_settings/dcc_model_coef.rds" beforeDir="false" afterPath="$PROJECT_DIR$/src/model_settings/dcc_model_coef.rds" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/remote_portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/remote_portfolio.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/strat_settings/strat_settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/strat_settings/strat_settings.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/portfolio_tools.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/portfolio_tools.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -65,51 +64,7 @@
       <recent name="C:\Users\MatarKANDJI\automAM\backtesting" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.main (2)">
-    <configuration name="main (1)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="automAM" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backtesting" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backtesting/main.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="main (2)" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
-      <module name="automAM" />
-      <option name="ENV_FILES" value="" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/backtesting" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/backtesting/main.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
+  <component name="RunManager">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="automAM" />
       <option name="ENV_FILES" value="" />
@@ -134,8 +89,6 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.main (2)" />
-        <item itemvalue="Python.main (1)" />
         <item itemvalue="Python.main" />
       </list>
     </recent_temporary>

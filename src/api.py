@@ -3,6 +3,7 @@ from abc import ABC
 from typing import List, Dict, Union
 from src.abstract import _BrokerAPI
 import time
+from datetime import datetime, timedelta
 
 
 class AlpacaBrokerAPI(_BrokerAPI, ABC):
@@ -64,10 +65,24 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         :param assets: A list of asset symbols (e.g., ['AAPL', 'GOOGL']).
         :return: A dictionary mapping each symbol to its current closing price.
         """
-        # Fetch the latest minute bar data for all specified assets
-        bars = self.api.get_bars(assets, '1Min', limit=1)
+        # Calculate the date range
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=2)  # Two days to ensure we get the last closing price
+
+        # Fetch the latest daily bar data for all specified assets
+        bars = self.api.get_bars(assets, '1D', start=start_date.isoformat(), end=end_date.isoformat(), feed='iex').df
+
+        # Transform the DataFrame into a dictionary for easy access
+        bars_dict = {symbol: bars[bars['symbol'] == symbol] for symbol in assets}
+
         # Extract the last closing price safely checking if data is available
-        prices = {asset: bars[asset][0].c for asset in assets if bars[asset]}
+        prices = {}
+        for asset in assets:
+            if asset in bars_dict and not bars_dict[asset].empty:
+                prices[asset] = bars_dict[asset].iloc[-1]['close']  # Latest closing price
+            else:
+                prices[asset] = None  # Or any default value if data is not available
+
         return prices
 
     def get_total_portfolio_value(self) -> float:
@@ -85,12 +100,15 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
 
         return total_portfolio_value
 
-    def place_orders(self, orders: List[Dict[str, Union[str, float]]]) -> List[str]:
+    def place_orders(self, orders: List[Dict[str, Union[str, float]]], **kwargs) -> List[str]:
         """
         Places multiple market orders through the Alpaca API based on weights relative to the total portfolio value.
 
         :param orders: A list of orders, each represented as a dictionary with 'asset', 'action', and 'weight'.
         :return: A list of messages indicating the result of each order placement.
+
+        Args:
+            **kwargs:
         """
         results = []
         total_portfolio_value = self.get_total_portfolio_value()
@@ -169,3 +187,16 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
                 cancellation_results.append(f"Order {order.id} could not be cancelled after multiple attempts.")
 
         return cancellation_results
+
+
+
+
+
+########### TEST API ##############
+from utils.load import load_json_config
+api_config = load_json_config(r'src/api_settings/api_settings.json')
+alpaca_api = AlpacaBrokerAPI(api_config)
+print(alpaca_api.get_available_cash())
+print(alpaca_api.get_open_orders())
+print(alpaca_api.get_current_prices(["AAPL", "GOOGL"]))
+print(alpaca_api.get_total_portfolio_value())

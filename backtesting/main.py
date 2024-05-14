@@ -1,8 +1,3 @@
-from configs.root_config import set_project_root
-
-# Configure the path to the project root
-set_project_root()
-
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,7 +10,10 @@ import datetime as dt
 import copy
 import pandas_market_calendars as mcal
 import matplotlib.dates as mdates
+from configs.root_config import set_project_root
 
+# Configure the path to the project root
+set_project_root()
 
 # Load configurations
 def load_configs():
