@@ -3,8 +3,6 @@ from abc import ABC
 from typing import List, Dict, Union
 from src.abstract import _BrokerAPI
 import time
-import requests
-from datetime import datetime, timedelta
 
 
 class AlpacaBrokerAPI(_BrokerAPI, ABC):
@@ -15,13 +13,13 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         :param api_config: A dictionary containing API key, secret, base URL, and API version.
         """
         # Store API keys separately
-        self.api_key = api_config["api_key"]
-        self.api_secret = api_config["api_secret"]
+        self._api_key = api_config["api_key"]
+        self._api_secret = api_config["api_secret"]
 
         # Initialize the internal _api attribute
         self._api = tradeapi.REST(
-            self.api_key,
-            self.api_secret,
+            self._api_key,
+            self._api_secret,
             api_config["base_url"],
             api_config.get("api_version", "v2")  # Use 'v2' as default API version if not provided
         )
