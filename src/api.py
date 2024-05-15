@@ -3,6 +3,7 @@ from abc import ABC
 from typing import List, Dict, Union
 from src.abstract import _BrokerAPI
 import time
+import requests
 from datetime import datetime, timedelta
 
 
@@ -13,12 +14,16 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
 
         :param api_config: A dictionary containing API key, secret, base URL, and API version.
         """
+        # Store API keys separately
+        self.api_key = api_config["api_key"]
+        self.api_secret = api_config["api_secret"]
+
         # Initialize the internal _api attribute
         self._api = tradeapi.REST(
-            api_config["api_key"],
-            api_config["api_secret"],
+            self.api_key,
+            self.api_secret,
             api_config["base_url"],
-            api_config["api_version"]
+            api_config.get("api_version", "v2")  # Use 'v2' as default API version if not provided
         )
 
     @property
@@ -58,31 +63,36 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         account = self.api.get_account()
         return float(account.cash)
 
-    def get_current_prices(self, assets: List[str]) -> Dict[str, float]:
+    def get_current_prices(self, assets: List[str], retries: int = 3, delay: int = 60) -> Dict[str, Dict[str, float]]:
         """
-        Retrieves the latest closing prices for a specified list of asset symbols using a single API call.
+        Retrieves the latest current prices and their trade dates for a specified list of asset symbols using a single API call.
+        Retries if not all prices are obtained.
 
         :param assets: A list of asset symbols (e.g., ['AAPL', 'GOOGL']).
-        :return: A dictionary mapping each symbol to its current closing price.
+        :param retries: Number of retries if prices are missing.
+        :param delay: Delay in seconds between retries.
+        :return: A dictionary with a date key and a dictionary of asset prices.
         """
-        # Calculate the date range
-        end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=2)  # Two days to ensure we get the last closing price
+        prices = {asset: None for asset in assets}
+        date = None
 
-        # Fetch the latest daily bar data for all specified assets
-        bars = self.api.get_bars(assets, '1D', start=start_date.isoformat(), end=end_date.isoformat(), feed='iex').df
+        for attempt in range(retries):
+            for asset in assets:
+                if prices[asset] is None:  # Only retry for assets that haven't got a price yet
+                    try:
+                        trade = self.api.get_latest_trade(asset)
+                        if trade:
+                            prices[asset] = trade.price
+                            date = trade.timestamp  # Update date to the latest trade timestamp
+                    except Exception:
+                        pass  # Ignore exceptions and retry
 
-        # Transform the DataFrame into a dictionary for easy access
-        bars_dict = {symbol: bars[bars['symbol'] == symbol] for symbol in assets}
-
-        # Extract the last closing price safely checking if data is available
-        prices = {}
-        for asset in assets:
-            if asset in bars_dict and not bars_dict[asset].empty:
-                prices[asset] = bars_dict[asset].iloc[-1]['close']  # Latest closing price
-            else:
-                prices[asset] = None  # Or any default value if data is not available
-
+            missing_prices = [asset for asset, price in prices.items() if price is None]
+            if not missing_prices:  # All prices obtained
+                break
+            if attempt < retries - 1:
+                time.sleep(delay)  # Wait before retrying
+        prices["date"] = date
         return prices
 
     def get_total_portfolio_value(self) -> float:
@@ -114,23 +124,18 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         total_portfolio_value = self.get_total_portfolio_value()
 
         for order in orders:
-            asset = order['asset']
-            action = order['action']
-            weight = order['weight']
-            current_prices = self.get_current_prices([asset])
-            quantity = (weight * total_portfolio_value) / current_prices[asset]
 
             try:
                 self.api.submit_order(
-                    symbol=asset,
-                    qty=quantity,
-                    side=action,
+                    symbol=order["symbol"],
+                    notional=order["notional"],
+                    side=order["side"],
                     type='market',
-                    time_in_force='gtc'
+                    time_in_force='day'
                 )
-                results.append(f"Order to {action} {quantity} shares of {asset} placed successfully.")
+                results.append(f"Order to {order["side"]} {order["notional"]} shares of {order["symbol"]} placed successfully.")
             except Exception as e:
-                results.append(f"Failed to place order to {action} {quantity} shares of {asset}. Error: {str(e)}")
+                results.append(f"Failed to place order to {order["side"]} {order["notional"]} shares of {order["symbol"]} . Error: {str(e)}")
 
         return results
 
@@ -187,16 +192,18 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
                 cancellation_results.append(f"Order {order.id} could not be cancelled after multiple attempts.")
 
         return cancellation_results
-
-
-
-
-
+'''
 ########### TEST API ##############
 from utils.load import load_json_config
-api_config = load_json_config(r'src/api_settings/api_settings.json')
+api_config = load_json_config(r'api_settings/api_settings.json')
 alpaca_api = AlpacaBrokerAPI(api_config)
 print(alpaca_api.get_available_cash())
 print(alpaca_api.get_open_orders())
-print(alpaca_api.get_current_prices(["AAPL", "GOOGL"]))
+print(alpaca_api.get_current_positions())
+print(alpaca_api.get_current_prices(["AAPL", "AMZN", "GOOGL"]))
+
 print(alpaca_api.get_total_portfolio_value())
+#print(alpaca_api.place_orders([{"symbol": 'GOOGL', "notional": 1, "side": 'buy'}]))
+#alpaca_api.cancel_all_open_orders()
+#alpaca_api.cancel_order('329b4299-d748-4670-8aa1-ec8b173de6e9')
+'''

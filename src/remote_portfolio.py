@@ -1,6 +1,7 @@
 from src.abstract import _BrokerAPI
 from typing import Dict, Any
 
+
 class RemotePortfolio:
     def __init__(self, broker_api: _BrokerAPI):
         """
@@ -12,7 +13,6 @@ class RemotePortfolio:
         self._positions = None  # Initializes positions to None
         self._open_orders = None  # Initializes open orders to None
         self._cash = None  # Initializes available cash to None
-        self._position = None  # Initializes calculated position to None
         self.refresh_portfolio()  # Refreshes portfolio data
 
     @property
@@ -51,15 +51,6 @@ class RemotePortfolio:
         """
         return self._cash
 
-    @property
-    def position(self) -> Dict[str, Any]:
-        """
-        Calculates the weights of each asset, including cash, in the total capital after canceling all open orders.
-
-        :return: A dictionary with symbols as keys and their respective weights in the total portfolio as values.
-        """
-        return self._position
-
     def calculate_position(self) -> Dict[str, Any]:
         """
         Calculates the weights of each asset, including cash, in the total capital after canceling all open orders.
@@ -67,8 +58,6 @@ class RemotePortfolio:
         :return: A dictionary with symbols as keys and their respective weights in the total portfolio as values.
         """
         # Cancel all open orders first to stabilize the portfolio
-        self._broker_api.cancel_all_open_orders()
-
         # Retrieve current positions and cash balance
         positions = self._broker_api.get_current_positions()
         cash = self._broker_api.get_available_cash()
@@ -85,20 +74,27 @@ class RemotePortfolio:
         total_capital = cash + sum(prices[symbol] * float(quantity) for symbol, quantity in positions.items())
 
         # Calculate the weight of each asset including cash
-        portfolio_weights = {'cash': cash / total_capital}
-        for symbol, quantity in positions.items():
-            asset_value = prices[symbol] * float(quantity)
-            portfolio_weights[symbol] = asset_value / total_capital
-
-        # Calculate total capital considering current prices
-        current_prices = self._broker_api.get_current_prices(self.positions.keys())
-        capital = sum(self.positions[asset] * price for asset, price in current_prices.items()) + self.cash
-        return {"capital": capital, "weights": portfolio_weights}
+        portfolio_weights = {symbol: (prices[symbol] * float(quantity)) / total_capital for
+                             symbol, quantity in positions.items()}
+        # Ajouter le poids du cash
+        portfolio_weights["cash"] = cash / total_capital
+        return {"date": prices["date"], "capital": total_capital, "weights": portfolio_weights}
 
     def refresh_portfolio(self) -> None:
         """
         Updates the portfolio information by retrieving the latest data from the broker's API.
         """
+        self._broker_api.cancel_all_open_orders()
         self._positions = self._broker_api.get_current_positions()  # Updates positions
         self._open_orders = self._broker_api.get_open_orders()  # Updates open orders
         self._cash = self._broker_api.get_available_cash()  # Updates available cash
+
+
+########### TEST API ##############
+from utils.load import load_json_config
+from src.api import AlpacaBrokerAPI
+api_config = load_json_config(r'api_settings/api_settings.json')
+alpaca_api = AlpacaBrokerAPI(api_config)
+rPortfolio = RemotePortfolio(alpaca_api)
+rPortfolio.refresh_portfolio()
+print(rPortfolio.calculate_position())

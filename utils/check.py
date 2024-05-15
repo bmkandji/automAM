@@ -6,6 +6,12 @@ def checks_weights(weights: np.ndarray):
         raise ValueError("weights must sum to 1.")
 
 
+def checks_portfolios(local_portfolio, remote_portfolio):
+    local_assets = set(local_portfolio.pf_config["symbols"])
+    remote_open_assets = remote_portfolio
+    return None
+
+
 def check_configs(portfolio=None, data=None,
                   model=None, check_date: bool = True,
                   check_scale: bool = False,
