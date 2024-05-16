@@ -1,3 +1,4 @@
 {
-    "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"]
+    "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"],
+    "market": "XNYS"
 }

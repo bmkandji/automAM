@@ -1,5 +1,6 @@
 {
     "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"],
+    "market": "XNYS",
     "start_date": null,
     "end_date": null,
     "api_config": {

@@ -3,10 +3,11 @@ from datetime import datetime
 from typing import Dict, Any
 from typing import Optional
 from src.abstract import _Data, _Strategies
-from utils.check import check_configs, checks_weights, checks_portfolios
+from utils.check import check_configs, checks_weights
 from abc import ABC
 from utils import portfolio_tools as pf_t
 from src.remote_portfolio import RemotePortfolio
+from src.common import get_last_trading_day
 
 
 class Position(ABC):
@@ -162,10 +163,16 @@ class Portfolio(Position):
         returns = data.window_returns(self.date, data.data_config["end_date"])
         print(f"observed returns: {returns}\n")
         if rem_portfolio is not None:
-            checks_portfolios(self, rem_portfolio)
+
+            check_configs(portfolio=self, rportfolio=rem_portfolio)
             rem_weights = rem_portfolio.weights()
-            #if rem_weights["date"]-1day <=
+
+            if not(get_last_trading_day(rem_weights["date"], self.pf_config["market"]) <
+                   data.data_config["end_date"] <= rem_weights["date"]):
+                raise ValueError("The date of data and remote portfolio are not coherent")
+
             checks_weights(rem_weights["weight"])
+
             (self._capital, self._weights) = (rem_weights["capital"],
                                               rem_weights["weight"])
 

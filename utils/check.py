@@ -5,16 +5,9 @@ def checks_weights(weights: np.ndarray):
     if not np.isclose(weights.sum(), 1):
         raise ValueError("weights must sum to 1.")
 
-
-def checks_portfolios(local_portfolio, remote_portfolio):
-
-    if set(local_portfolio.pf_config["symbols"]) != set(remote_portfolio.pf_config["symbols"]):
-        raise ValueError("Configuration mismatch: symbol sets do not align.")
-
-
-
 def check_configs(portfolio=None, data=None,
-                  model=None, check_date: bool = True,
+                  model=None, rportfolio = None,
+                  check_date: bool = True,
                   check_scale: bool = False,
                   check_fit_date: bool = True):
     """
@@ -42,9 +35,9 @@ def check_configs(portfolio=None, data=None,
     portfolio_symbols = set(portfolio.pf_config["symbols"]) if portfolio else None
     data_symbols = set(data.data_config["symbols"]) if data else None
     model_symbols = set(model.model_config["symbols"]) if model else None
-
+    rportfolio_symbols = set(rportfolio.pf_config["symbols"]) if model else None
     # Check if all provided symbol sets are identical
-    symbol_sets = [s for s in [portfolio_symbols, data_symbols, model_symbols] if s is not None]
+    symbol_sets = [s for s in [portfolio_symbols, data_symbols, model_symbols, rportfolio_symbols] if s is not None]
     if not all(s == symbol_sets[0] for s in symbol_sets):
         raise ValueError("Configuration mismatch: symbol sets do not align.")
 

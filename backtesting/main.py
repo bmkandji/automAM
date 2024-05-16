@@ -8,7 +8,7 @@ from src.local_portfolio import Portfolio
 from utils.load import load_json_config
 import datetime as dt
 import copy
-import pandas_market_calendars as mcal
+import exchange_calendars as ecals
 import matplotlib.dates as mdates
 from configs.root_config import set_project_root
 
@@ -43,10 +43,10 @@ def initialize_components(data_config, model_config, pf_config, strat_config):
 
 
 # Retrieve NASDAQ trading days
-def get_trading_days(start_date, end_date):
-    nasdaq = mcal.get_calendar('NASDAQ')
-    trading_days = nasdaq.valid_days(start_date=start_date, end_date=end_date).tz_localize(None)
-    return [day.to_pydatetime() for day in trading_days]
+def get_trading_days(start_date, end_date, market):
+    nasdaq_cal = ecals.get_calendar(market)
+    sessions = nasdaq_cal.sessions_in_range(pd.Timestamp(start_date), pd.Timestamp(end_date))
+    return [session.to_pydatetime() for session in sessions]
 
 
 # Dynamic plotting setup
@@ -102,7 +102,7 @@ def main():
     data, model, portfolio = initialize_components(data_config, model_config, pf_config, strat_config)
     start_date = dt.datetime(2018, 1, 3)
     end_date = dt.datetime(2024, 5, 10)
-    date_list = get_trading_days(start_date, end_date)
+    date_list = get_trading_days(start_date, end_date, portfolio.pf_config["market"])
     dynamic_plotting(date_list, portfolio, data, model)
 
 

@@ -95,7 +95,7 @@ class RemotePortfolio:
         self._open_orders = self._broker_api.get_open_orders(self._pf_config["symbols"])  # Updates open orders
         self._cash = self._broker_api.get_available_cash()  # Updates available cash
 
-
+"""
 ########### TEST API ##############
 from utils.load import load_json_config
 from src.api import AlpacaBrokerAPI
@@ -105,3 +105,4 @@ alpaca_api = AlpacaBrokerAPI(api_config)
 rPortfolio = RemotePortfolio(alpaca_api, rpf_config)
 rPortfolio.refresh_portfolio()
 print(rPortfolio.weights())
+"""

@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import Any
+import exchange_calendars as ecals
 
 
 def compute_log_returns(df: pd.DataFrame, scale: float = 100) -> pd.DataFrame:
@@ -83,3 +84,29 @@ def weighting(data: np.ndarray, scheme: str = 'uniform', **kwargs: Any) -> np.nd
     weightsed_mean = np.average(data, axis=0, weights=weights)
 
     return weightsed_mean
+
+
+def get_last_trading_day(given_date, market):
+    """
+    Returns the last trading day for the NASDAQ market before the given date.
+
+    :param given_date: The given date as a datetime object.
+    :return: The last trading day as a datetime object.
+
+    Args:
+        market:
+    """
+    # NASDAQ calendar
+    market_cal = ecals.get_calendar(market)
+
+    # Convert the given date to a pandas Timestamp object
+    given_date = pd.Timestamp(given_date)
+
+    # Get the schedule for the past month up to the given date
+    one_month_ago = given_date - pd.DateOffset(months=1)
+    schedule = market_cal.sessions_in_range(one_month_ago, given_date)
+
+    # Find the last trading day before the given date
+    last_trading_day = schedule[schedule < given_date][-1]
+
+    return last_trading_day.to_pydatetime()
