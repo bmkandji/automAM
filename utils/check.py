@@ -5,8 +5,9 @@ def checks_weights(weights: np.ndarray):
     if not np.isclose(weights.sum(), 1):
         raise ValueError("weights must sum to 1.")
 
+
 def check_configs(portfolio=None, data=None,
-                  model=None, rportfolio = None,
+                  model=None, rportfolio=None,
                   check_date: bool = True,
                   check_scale: bool = False,
                   check_fit_date: bool = True):

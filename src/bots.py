@@ -3,17 +3,18 @@ from typing import Dict, List, Union
 
 
 class PortfolioManager:
-    def __init__(self, broker_api: _BrokerAPI, model: _Model, strategy: _Strategies):
+    def __init__(self, pm_config):
         """
         Initializes the portfolio manager with a brokerage API.
 
-        :param broker_api: An instance of the brokerage API to interact with the trading account.
-        :param model: An instance of the model to use for portfolio management.
-        :param strategy: An instance of the strategy to use for portfolio management.
+        :param pm_config: A configuration dictionary for the portfolio manager.
         """
-        self.broker_api = broker_api
-        self.model = model
-        self.strategy = strategy
+        self.pm_config = pm_config
+        self.broker_api = None
+        self.data = None
+        self.model = None
+        self.strategy = None
+        self.pending_orders = []
 
     def update_portfolio_weights(self, target_weights: Dict[str, float]):
         """
@@ -44,18 +45,20 @@ class PortfolioManager:
             difference = target_value - current_value
             weight_to_trade = abs(difference) / total_portfolio_value
             if difference > 0:
-                orders_to_place.append({'asset': asset, 'action': 'buy', 'weight': weight_to_trade})
+                orders_to_place.append({'asset': asset, 'action': 'buy', 'weight': weight_to_trade, 'value': abs(difference)})
             elif difference < 0:
-                orders_to_place.append({'asset': asset, 'action': 'sell', 'weight': weight_to_trade})
+                orders_to_place.append({'asset': asset, 'action': 'sell', 'weight': weight_to_trade, 'value': abs(difference)})
 
-        self.broker_api.place_orders(orders_to_place)
+        # Sort orders by value for execution
+        orders_to_place.sort(key=lambda x: x['value'])
+
+        self.pending_orders.extend(orders_to_place)
 
     def cancel_or_adjust_orders(self, current_orders: List[Dict[str, Union[str, float]]],
                                 target_values: Dict[str, float], current_prices: Dict[str, float],
                                 total_portfolio_value: float):
         """
         Cancels or adjusts existing orders based on target values.
-
         :param current_orders: A list of current open orders.
         :param target_values: A dictionary with asset symbols as keys and target values as values.
         :param current_prices: A dictionary with asset symbols as keys and their current prices as values.
@@ -71,3 +74,29 @@ class PortfolioManager:
             if (order_type == 'buy' and order_value > target_value) or (
                     order_type == 'sell' and order_value < target_value):
                 self.broker_api.cancel_order(order['id'])
+
+    def execute_pending_orders(self):
+        """
+        Execute pending orders in order of their value and remove them from the list if successful.
+        """
+        current_cash = self.broker_api.get_available_cash()
+
+        for order in self.pending_orders[:]:
+            order_value = order['value']
+            if order['action'] == 'buy' and order_value > current_cash:
+                continue  # Skip this order if not enough cash is available
+
+            success = self.broker_api.place_order(order['asset'], order['action'], order['weight'])
+            if success:
+                self.pending_orders.remove(order)
+                if order['action'] == 'buy':
+                    current_cash -= order_value  # Update available cash after a buy order
+
+    def add_pending_order(self, order: Dict[str, Union[str, float]]):
+        """
+        Adds a new order to the pending orders list.
+
+        :param order: A dictionary representing the order to be added.
+        """
+        self.pending_orders.append(order)
+        self.pending_orders.sort(key=lambda x: x['value'])  # Keep orders sorted by value
