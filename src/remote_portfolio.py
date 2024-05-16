@@ -57,7 +57,7 @@ class RemotePortfolio:
         """
         return self._cash
 
-    def calculate_position(self) -> Dict[str, Any]:
+    def weights(self) -> Dict[str, Any]:
         """
         Calculates the weights of each asset, including cash, in the total capital after canceling all open orders.
 
@@ -104,4 +104,4 @@ rpf_config = load_json_config(r'portfolio_settings/rpf_settings.json')
 alpaca_api = AlpacaBrokerAPI(api_config)
 rPortfolio = RemotePortfolio(alpaca_api, rpf_config)
 rPortfolio.refresh_portfolio()
-print(rPortfolio.calculate_position())
+print(rPortfolio.weights())

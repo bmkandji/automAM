@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, Any
 from typing import Optional
 from src.abstract import _Data, _Strategies
-from utils.check import check_configs, checks_weights
+from utils.check import check_configs, checks_weights, checks_portfolios
 from abc import ABC
 from utils import portfolio_tools as pf_t
 from src.remote_portfolio import RemotePortfolio
@@ -162,9 +162,12 @@ class Portfolio(Position):
         returns = data.window_returns(self.date, data.data_config["end_date"])
         print(f"observed returns: {returns}\n")
         if rem_portfolio is not None:
-            checks_weights(rem_portfolio.position["weight"])
-            (self._capital, self._weights) = (rem_portfolio.position["capital"],
-                                              rem_portfolio.position["weight"])
+            checks_portfolios(self, rem_portfolio)
+            rem_weights = rem_portfolio.weights()
+            #if rem_weights["date"]-1day <=
+            checks_weights(rem_weights["weight"])
+            (self._capital, self._weights) = (rem_weights["capital"],
+                                              rem_weights["weight"])
 
         else:
             past_capital = pf_t.capital_fw(self.next_weights, self.weights,

@@ -7,9 +7,10 @@ def checks_weights(weights: np.ndarray):
 
 
 def checks_portfolios(local_portfolio, remote_portfolio):
-    local_assets = set(local_portfolio.pf_config["symbols"])
-    remote_open_assets = remote_portfolio
-    return None
+
+    if set(local_portfolio.pf_config["symbols"]) != set(remote_portfolio.pf_config["symbols"]):
+        raise ValueError("Configuration mismatch: symbol sets do not align.")
+
 
 
 def check_configs(portfolio=None, data=None,

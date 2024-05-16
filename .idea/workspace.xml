@@ -5,12 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ecfb871f-68a4-4833-b885-b871ed5eb1cd" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/portfolio_settings/rpf_setting.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/abstract.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/abstract.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/portfolio_settings/pf_settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/portfolio_settings/pf_settings.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/local_portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/local_portfolio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/portfolio_settings/rpf_setting.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/portfolio_settings/rpf_settings.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/remote_portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/remote_portfolio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/check.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/check.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/utils/load.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/load.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,6 +29,9 @@
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
   </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
