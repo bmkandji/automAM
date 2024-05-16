@@ -3,17 +3,23 @@ from typing import Dict, Any
 
 
 class RemotePortfolio:
-    def __init__(self, broker_api: _BrokerAPI):
+    def __init__(self, broker_api: _BrokerAPI, pf_config: dict):
         """
         Initializes the remote portfolio with a reference to the broker's API.
 
         :param broker_api: An instance of the broker's API to query and act on the trading account.
         """
+        self._pf_config = pf_config
         self._broker_api = broker_api  # Stores the broker API instance
         self._positions = None  # Initializes positions to None
         self._open_orders = None  # Initializes open orders to None
         self._cash = None  # Initializes available cash to None
         self.refresh_portfolio()  # Refreshes portfolio data
+
+    @property
+    def pf_config(self) -> Dict[str, Any]:
+        """Returns the portfolio configuration dictionary."""
+        return self._pf_config
 
     @property
     def broker_api(self) -> _BrokerAPI:
@@ -59,7 +65,7 @@ class RemotePortfolio:
         """
         # Cancel all open orders first to stabilize the portfolio
         # Retrieve current positions and cash balance
-        positions = self._broker_api.get_current_positions()
+        positions = self._broker_api.get_current_positions(self._pf_config["symbols"])
         cash = self._broker_api.get_available_cash()
 
         # If positions are empty and only cash is available
@@ -84,9 +90,9 @@ class RemotePortfolio:
         """
         Updates the portfolio information by retrieving the latest data from the broker's API.
         """
-        self._broker_api.cancel_all_open_orders()
-        self._positions = self._broker_api.get_current_positions()  # Updates positions
-        self._open_orders = self._broker_api.get_open_orders()  # Updates open orders
+        self._broker_api.cancel_all_open_orders(self._pf_config["symbols"])
+        self._positions = self._broker_api.get_current_positions(self._pf_config["symbols"])  # Updates positions
+        self._open_orders = self._broker_api.get_open_orders(self._pf_config["symbols"])  # Updates open orders
         self._cash = self._broker_api.get_available_cash()  # Updates available cash
 
 
@@ -94,7 +100,8 @@ class RemotePortfolio:
 from utils.load import load_json_config
 from src.api import AlpacaBrokerAPI
 api_config = load_json_config(r'api_settings/api_settings.json')
+rpf_config = load_json_config(r'portfolio_settings/rpf_settings.json')
 alpaca_api = AlpacaBrokerAPI(api_config)
-rPortfolio = RemotePortfolio(alpaca_api)
+rPortfolio = RemotePortfolio(alpaca_api, rpf_config)
 rPortfolio.refresh_portfolio()
 print(rPortfolio.calculate_position())

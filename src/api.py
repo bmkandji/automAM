@@ -33,23 +33,41 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         """
         return self._api
 
-    def get_current_positions(self) -> Dict[str, str]:
+    def get_current_positions(self, assets: List[str] = None) -> Dict[str, str]:
         """
-        Retrieves all current open positions from the Alpaca account.
+        Retrieves current open positions from the Alpaca account, optionally filtering by a list of assets.
 
+        :param assets: Optional list of asset symbols to filter positions.
         :return: A dictionary of current positions with symbols as keys and quantities as values.
         """
-        # Fetch and return the current open positions in a dictionary format
-        return {pos.symbol: pos.qty for pos in self.api.list_positions()}
+        # Fetch all positions
+        all_positions = self.api.list_positions()
 
-    def get_open_orders(self) -> List[tradeapi.entity.Order]:
+        # Filter positions if a list of assets is provided
+        if assets:
+            positions = {pos.symbol: pos.qty for pos in all_positions if pos.symbol in assets}
+        else:
+            positions = {pos.symbol: pos.qty for pos in all_positions}
+
+        return positions
+
+    def get_open_orders(self, assets: List[str] = None) -> List[tradeapi.entity.Order]:
         """
-        Fetches all open orders from the Alpaca account.
+        Fetches all open orders from the Alpaca account, optionally filtering by a list of assets.
 
+        :param assets: Optional list of asset symbols to filter orders.
         :return: A list of open orders.
         """
-        # Return a list of all open orders
-        return self.api.list_orders(status='open')
+        # Fetch all open orders
+        all_open_orders = self.api.list_orders(status='open')
+
+        # Filter orders if a list of assets is provided
+        if assets:
+            open_orders = [order for order in all_open_orders if order.symbol in assets]
+        else:
+            open_orders = all_open_orders
+
+        return open_orders
 
     def get_available_cash(self) -> float:
         """
@@ -93,13 +111,15 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
         prices["date"] = date
         return prices
 
-    def get_total_portfolio_value(self) -> float:
+    def get_total_portfolio_value(self, assets: List[str] = None) -> float:
         """
-        Calculates the total value of the portfolio, including current positions and available cash.
+        Calculates the total value of the portfolio, including current positions and available cash,
+        optionally filtered by a list of assets.
 
+        :param assets: Optional list of asset symbols to filter positions.
         :return: Total portfolio value.
         """
-        current_positions = self.get_current_positions()
+        current_positions = self.get_current_positions(assets)
         current_prices = self.get_current_prices(list(current_positions.keys()))
         current_cash = self.get_available_cash()
 
@@ -108,7 +128,7 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
 
         return total_portfolio_value
 
-    def place_orders(self, orders: List[Dict[str, Union[str, float]]], **kwargs) -> List[str]:
+    def place_orders(self, orders: List[Dict[str, Union[str, float]]]) -> List[str]:
         """
         Places multiple market orders through the Alpaca API based on weights relative to the total portfolio value.
 
@@ -152,17 +172,25 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
             # Return an error message if cancellation fails
             return f"Failed to cancel order {order_id}. Error: {str(e)}"
 
-    def cancel_all_open_orders(self) -> List[str]:
+    def cancel_all_open_orders(self, assets: List[str] = None) -> List[str]:
         """
-        Attempts to cancel all open orders, retrying if some are not initially canceled.
+        Attempts to cancel all open orders, optionally filtered by a list of assets, retrying if some are not initially canceled.
 
+        :param assets: Optional list of asset symbols to filter orders.
         :return: A list of messages indicating the result of each cancellation attempt.
         """
         attempts = 3  # Number of attempts to cancel each order
         delay = 2  # Delay in seconds before retrying
 
         # Retrieve all open orders
-        open_orders = self.api.list_orders(status='open')
+        all_open_orders = self.api.list_orders(status='open')
+
+        # Filter orders if a list of assets is provided
+        if assets:
+            open_orders = [order for order in all_open_orders if order.symbol in assets]
+        else:
+            open_orders = all_open_orders
+
         cancellation_results = []
 
         while attempts > 0 and open_orders:
@@ -176,7 +204,7 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
                     # Append a success message for each cancellation
                     cancellation_results.append(f"Order {order.id} has been cancelled successfully.")
                 except Exception as e:
-                    # Append an error message if cancellation fails, matching the format used in cancel_order
+                    # Append an error message if cancellation fails
                     cancellation_results.append(f"Failed to cancel order {order.id}. Error: {str(e)}")
                     open_orders.append(order)  # Add order to list for retry
 
@@ -190,18 +218,19 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
                 cancellation_results.append(f"Order {order.id} could not be cancelled after multiple attempts.")
 
         return cancellation_results
-'''
+
+"""
 ########### TEST API ##############
 from utils.load import load_json_config
 api_config = load_json_config(r'api_settings/api_settings.json')
 alpaca_api = AlpacaBrokerAPI(api_config)
 print(alpaca_api.get_available_cash())
-print(alpaca_api.get_open_orders())
-print(alpaca_api.get_current_positions())
+print(alpaca_api.get_open_orders(["AAPL", "AMZN", "GOOGL"]))
+print(alpaca_api.get_current_positions(["AAPL", "AMZN", "GOOGL"]))
 print(alpaca_api.get_current_prices(["AAPL", "AMZN", "GOOGL"]))
 
-print(alpaca_api.get_total_portfolio_value())
-#print(alpaca_api.place_orders([{"symbol": 'GOOGL', "notional": 1, "side": 'buy'}]))
+print(alpaca_api.get_total_portfolio_value(["AAPL", "AMZN", "GOOGL"]))
+#print(alpaca_api.place_orders([{"symbol": 'GOOGL', "notional": 5, "side": 'sell'}]))
 #alpaca_api.cancel_all_open_orders()
 #alpaca_api.cancel_order('329b4299-d748-4670-8aa1-ec8b173de6e9')
-'''
+"""

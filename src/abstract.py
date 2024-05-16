@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Dict, Any
+from typing import Dict, Any, List, Union
 from datetime import datetime
 from utils.check import check_configs  # Importation des utilitaires nécessaires
 import pandas as pd
@@ -183,14 +183,14 @@ class _BrokerAPI(ABC):
     """
 
     @abstractmethod
-    def get_current_positions(self):
+    def get_current_positions(self, assets: List[str] = None):
         """
         Retourne toutes les positions ouvertes du compte.
         """
         pass
 
     @abstractmethod
-    def get_open_orders(self):
+    def get_open_orders(self, assets: List[str] = None):
         """
         Retourne tous les ordres ouverts.
         """
@@ -211,7 +211,7 @@ class _BrokerAPI(ABC):
         pass
 
     @abstractmethod
-    def place_orders(self, asset, action, quantity):
+    def place_orders(self, orders: List[Dict[str, Union[str, float]]]) -> List[str]:
         """
         Place un ordre sur le marché.
         """
@@ -225,7 +225,7 @@ class _BrokerAPI(ABC):
         pass
 
     @abstractmethod
-    def cancel_all_open_orders(self):
+    def cancel_all_open_orders(self, assets: List[str] = None):
         """
         Annule tous ls odres ouverts
         """
