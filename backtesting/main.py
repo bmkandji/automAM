@@ -15,6 +15,7 @@ from configs.root_config import set_project_root
 # Configure the path to the project root
 set_project_root()
 
+
 # Load configurations
 def load_configs():
     data_config = load_json_config(r'src/data_settings/data_settings.json')

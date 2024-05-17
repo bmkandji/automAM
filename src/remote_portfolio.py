@@ -98,10 +98,10 @@ class RemotePortfolio:
 """
 ########### TEST API ##############
 from utils.load import load_json_config
-from src.api import AlpacaBrokerAPI
+from src.api import API
 api_config = load_json_config(r'api_settings/api_settings.json')
 rpf_config = load_json_config(r'portfolio_settings/rpf_settings.json')
-alpaca_api = AlpacaBrokerAPI(api_config)
+alpaca_api = API(api_config)
 rPortfolio = RemotePortfolio(alpaca_api, rpf_config)
 rPortfolio.refresh_portfolio()
 print(rPortfolio.weights())

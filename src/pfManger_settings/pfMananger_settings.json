@@ -1,0 +1,85 @@
+{
+    "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"],
+
+    "market": "XNYS",
+
+    "data": {
+                "start_date": null,
+                "end_date": null,
+                "api_config": {
+                            "api_key": "AKLV1H5N2WJ83Y5A4ESO",
+                            "api_secret": null,
+                            "base_url": "https://api.alpaca.markets",
+                            "api_version": "v2"
+                                },
+                "scale": 100,
+                "cash": {"USD":  0.0}
+                        },
+
+    "model": {
+                "model_config": {
+                    "model_path": "C:/Users/MatarKANDJI/automAM/src/model_settings/dcc_model_coef.rds",
+                    "model": "sGARCH",
+                    "armaOrder": [5, 1],
+                    "distribution_garch": "norm",
+                    "dccOrder": [2, 1],
+                    "distribution_dcc": "mvt",
+                    "weights": "uniform",
+                    "recalib" : 5
+                }
+            },
+
+    "portfolio": {
+            "fixed_weights" : [[1,  1, 0, 0, 1],[0, 0, 0, 0, 0]],
+            "ref_portfolios": {
+                "AAPL": {
+                    "capital": null,
+                    "next_weights": [0.0, 1.0, 0.0, 0.0, 0.0],
+                    "weights": null
+                },
+                "GOOGL": {
+                    "capital": null,
+                    "next_weights": [0.0, 0.0, 1.0, 0.0, 0.0],
+                    "weights": null
+                },
+                "MSFT": {
+                    "capital": null,
+                    "next_weights": [0.0, 0.0, 0.0, 1.0, 0.0],
+                    "weights": null
+
+                },
+                "^GSPC": {
+                    "capital": null,
+                    "next_weights": [0.0, 0.0, 0.0, 0.0, 1.0],
+                    "weights": null
+
+                },
+                "Eq_weighted": {
+                    "capital": null,
+                    "next_weights": [0.25, 0.25, 0.25, 0.25, 0.0],
+                    "weights": null
+
+                                }
+
+                                }
+                },
+
+    "strategy":
+                {
+                    "strategy": "mean_var",
+                    "aversion": 0,
+                    "fee_rate": 0.0,
+                    "bounds": [0, null]
+                },
+
+    "api": {
+                "api_key": "AKLV1H5N2WJ83Y5A4ESO",
+                "api_secret": "LBceJoBsEOYNHdOi6ebawoM6mJCJfkJntGWcTnSo",
+                "base_url": "https://api.alpaca.markets",
+                "api_version": "v2",
+                "cash": "USD"
+                    },
+
+    "rportfolio" : {
+                    }
+}

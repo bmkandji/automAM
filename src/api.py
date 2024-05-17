@@ -5,7 +5,7 @@ from src.abstract import _BrokerAPI
 import time
 
 
-class AlpacaBrokerAPI(_BrokerAPI, ABC):
+class API(_BrokerAPI, ABC):
     def __init__(self, api_config: Dict[str, str]):
         """
         Initialize the Alpaca API client with user credentials.
@@ -223,7 +223,7 @@ class AlpacaBrokerAPI(_BrokerAPI, ABC):
 ########### TEST API ##############
 from utils.load import load_json_config
 api_config = load_json_config(r'api_settings/api_settings.json')
-alpaca_api = AlpacaBrokerAPI(api_config)
+alpaca_api = API(api_config)
 print(alpaca_api.get_available_cash())
 print(alpaca_api.get_open_orders(["AAPL", "AMZN", "GOOGL"]))
 print(alpaca_api.get_current_positions(["AAPL", "AMZN", "GOOGL"]))
