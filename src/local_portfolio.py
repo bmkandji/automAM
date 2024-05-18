@@ -135,7 +135,8 @@ class Portfolio(Position):
         self._next_weights = next_weights
         self._strategies = strategies  # Adjusted to handle multiple strategies
 
-    def forward(self, data: _Data, update_weights=True,
+    def forward(self, data: _Data,
+                update_weights=True,
                 strategies: _Strategies = None,
                 rem_portfolio: RemotePortfolio = None,
                 update_ref_pf: bool = True):
@@ -165,16 +166,19 @@ class Portfolio(Position):
         if rem_portfolio is not None:
 
             check_configs(portfolio=self, rportfolio=rem_portfolio)
-            rem_weights = rem_portfolio.weights()
+            capital_weights = rem_portfolio.weights()
+            observed_weights = [capital_weights["weight"][asset]
+                                for asset in
+                                ["cash"] + self.pf_config["symbols"]]
 
-            if not(get_last_trading_day(rem_weights["date"], self.pf_config["market"]) <
-                   data.data_config["end_date"] <= rem_weights["date"]):
+            if not(get_last_trading_day(capital_weights["date"], self.pf_config["market"]) <
+                   data.data_config["end_date"] <= capital_weights["date"]):
                 raise ValueError("The date of data and remote portfolio are not coherent")
 
-            checks_weights(rem_weights["weight"])
+            checks_weights(observed_weights)
 
-            (self._capital, self._weights) = (rem_weights["capital"],
-                                              rem_weights["weight"])
+            (self._capital, self._weights) = (capital_weights["capital"],
+                                              observed_weights)
 
         else:
             past_capital = pf_t.capital_fw(self.next_weights, self.weights,

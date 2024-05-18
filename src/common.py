@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from typing import Any
 import exchange_calendars as ecals
+from datetime import datetime, timedelta
 
 
 def compute_log_returns(df: pd.DataFrame, scale: float = 100) -> pd.DataFrame:
@@ -110,3 +111,38 @@ def get_last_trading_day(given_date, market):
     last_trading_day = schedule[schedule < given_date][-1]
 
     return last_trading_day.to_pydatetime()
+
+
+def market_settigs_date(cal_name: str, start: datetime, end: datetime):
+
+    # Créer une instance du calendrier pour le marché spécifié
+    calendar = ecals.get_calendar(cal_name)
+
+    # Obtenir les jours ouvrés dans la plage de dates donnée
+    trading_days = calendar.sessions_in_range(start, end)
+
+    # Ajouter une heure après l'ouverture à chaque jour ouvré
+    open_session = [calendar.session_open(session) for session in trading_days]
+
+    # Ajouter une heure après l'ouverture à chaque jour ouvré
+    settigs_hour = [(start_session - timedelta(hours=1),
+                     start_session,
+                     start_session + timedelta(hours=1))
+                    for start_session in open_session]
+
+    return settigs_hour
+
+
+def Check_and_update_Date(tuples_list):
+    now = datetime.now()
+    # Utiliser une compréhension de liste pour filtrer les tuples dont la seconde date dépasse l'instant présent
+    rebalDate = [(before, start, end) for before, start, end in tuples_list if end > now]
+
+    # Vérifier si la liste est vide après le filtrage
+    if not rebalDate:
+        return False, rebalDate
+    to_calib = rebalDate[0][0] <= now < rebalDate[0][1]
+    # Vérifier si maintenant est entre le début et la fin du premier intervalle restant
+    to_update = rebalDate[0][1] <= now < rebalDate[0][2]
+
+    return to_calib, to_update, rebalDate

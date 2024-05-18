@@ -4,95 +4,138 @@ from src.remote_portfolio import RemotePortfolio
 from src.models import Model
 from src.data_mn import Data
 from src.strategies import Strategies
+from datetime import datetime, timedelta
+import time
 from typing import Dict, List, Union
-from datetime import datetime
 from api import API
-from src.common import get_last_trading_day
+from src.common import (get_last_trading_day,
+                        market_settigs_date,
+                        Check_and_update_Date)
+from utils import portfolio_tools as pf_t
+
 
 class PortfolioManager:
-    def __init__(self, pm_config):
+    def __init__(self, pm_config: Dict[str, Dict[str, Union[str, int, float]]]) -> None:
         """
         Initializes the portfolio manager with a brokerage API.
 
         :param pm_config: A configuration dictionary for the portfolio manager.
         """
-        pm_config["data"].update({"symbols": pm_config["symbols"]})
+        # Update configuration with symbols and market information
+        pm_config["data"].update({"symbols": pm_config["symbols"],
+                                  "horizon": pm_config["horizon"]})
+
         pm_config["model"].update({"symbols": pm_config["symbols"]})
-        pm_config["portfolio"].update({"symbols": pm_config["symbols"], "market": pm_config["market"]})
-        pm_config["rportfolio"].update({"symbols": pm_config["symbols"], "market": pm_config["market"]})
+
+        pm_config["portfolio"].update({"symbols": pm_config["symbols"],
+                                       "market": pm_config["market"]})
+
+        pm_config["rportfolio"].update({"symbols": pm_config["symbols"],
+                                        "market": pm_config["market"]})
+
         strat_config = pm_config["strategy"]
         api_config = pm_config["api"]
 
-        self.data: _Data = Data(pm_config["data"])
-        self.model: _Model = Model(pm_config["model"])
-        self.strategy: _Strategies = Strategies(strat_config)
-        self.rportfolio: RemotePortfolio = RemotePortfolio(API(api_config), pm_config["rportfolio"])
+        today = datetime.now()
+        end_date = today + timedelta(days=365)
 
+        # Get rebalance dates (one hour after market open) for the next year
+        self.rebal_date: List[datetime] = market_settigs_date(pm_config["market"], today, end_date)
+
+        # Fetch historical data
+        self.data: _Data = Data(pm_config["data"]).fetch_data(
+            today - timedelta(days=pm_config["hist_dataLen"]), today)
+
+        # Fit and forecast using the model
+        self.model: _Model = Model(pm_config["model"])
+
+        # Initialize strategy
+        self.strategy: _Strategies = Strategies(strat_config)
+
+        # Initialize remote portfolio and refresh it
+        self.rportfolio: RemotePortfolio = RemotePortfolio(API(api_config), pm_config["rportfolio"])
         self.rportfolio.refresh_portfolio()
         position = self.rportfolio.weights()
-        self.portfolio: Portfolio = Portfolio(pm_config["portfolio"],
-                                              position["capital"],
-                                              position["weights"],
-                                              get_last_trading_day(position["date"], pm_config["market"]))
 
-        self.pending_orders: List[Dict[str, Union[str, float]]] = []
-        self.rebal_date: List[datetime] = []
+        # Initialize local portfolio with the refreshed positions
+        self.portfolio: Portfolio = (Portfolio(
+            pm_config["portfolio"],
+            position["capital"],
+            position["weights"],
+            get_last_trading_day(position["date"], pm_config["market"])).
+                                     update_metrics(self.data))
+        # Initialize pending orders list
+        self.pending_orders: Dict[str, List[Dict[str, Union[str, float]]]] = {}
 
-    def update_portfolio_weights(self, target_weights: Dict[str, float]):
+    def update_portfolio(self, to_calib: bool = False):
         """
         Updates the portfolio weights with the complete logic to manage existing orders and place new orders.
 
-        :param target_weights: A dictionary with asset symbols as keys and target weights as values.
         """
+
+        max_attempts = 5
+        attempts = 0
+
+        while self.rportfolio.open_orders and attempts < max_attempts:
+            time.sleep(60)
+            self.rportfolio.refresh_portfolio()
+            attempts += 1
+
+        if self.rportfolio.open_orders:
+            raise ValueError("Failed to refresh portfolio: open orders still present after 5 attempts.")
+
+        self.data.update_data()
+
+        self.model.fit_fcast(self.data,
+                             self.data.data_config["end_date"] +
+                             timedelta(days=self.data.data_config["horizon"]))
+
+        self.portfolio.forward(self.data,
+                               to_calib,
+                               self.strategy,
+                               self.rportfolio,
+                               update_ref_pf=True)
+
+        capital_weights = self.rportfolio.weights()
+        weights = [capital_weights["weight"][asset]
+                   for asset in
+                   ["cash"] + self.portfolio.pf_config["symbols"]]
+
+        next_capital = pf_t.capital_fw(self.portfolio.next_weights, weights,
+                                       self.strategy.strat_config["fee_rate"], capital_weights["capital"])
+
+        target_weights = {
+            asset: weight
+            for asset, weight in zip(["cash"] + self.portfolio.pf_config["symbols"], self.portfolio.next_weights)
+        }
+
+        target_values = {asset: next_capital * weight
+                         for asset, weight in target_weights.items()
+                         if asset != "cash"}
+
         current_positions = self.rportfolio.positions
-        current_orders = self.rportfolio.open_orders
-        current_prices = self.rportfolio.broker_api.get_current_prices(list(target_weights.keys()))
-        current_cash = self.rportfolio.cash
+        current_prices = (self.rportfolio.broker_api.
+                          get_current_prices(self.rportfolio.pf_config["symbols"]))
 
-        total_portfolio_value = sum(
-            float(current_positions[asset]) * current_prices[asset] for asset in current_positions) + current_cash
-
-        target_values = {asset: total_portfolio_value * weight for asset, weight in target_weights.items()}
-
-        self.cancel_or_adjust_orders(current_orders, target_values, current_prices, total_portfolio_value)
-
-        orders_to_place = []
+        buy_orders = []
+        sell_orders = []
         for asset, target_value in target_values.items():
             current_value = float(current_positions.get(asset, 0)) * current_prices[asset]
             difference = target_value - current_value
-            weight_to_trade = abs(difference) / total_portfolio_value
+
             if difference > 0:
-                orders_to_place.append(
-                    {'asset': asset, 'action': 'buy', 'weight': weight_to_trade, 'value': abs(difference)})
+                # Pour acheter, on utilise la valeur notionnelle
+                buy_orders.append({'asset': asset, 'action': 'buy', 'value': abs(difference)})
             elif difference < 0:
-                orders_to_place.append(
-                    {'asset': asset, 'action': 'sell', 'weight': weight_to_trade, 'value': abs(difference)})
+                # Pour vendre, on utilise les unités
+                units_to_sell = abs(difference) / current_prices[asset]
+                sell_orders.append({'asset': asset, 'action': 'sell', 'units': units_to_sell, 'value': abs(difference)})
 
-        orders_to_place.sort(key=lambda x: x['value'])
+        # Trier les ordres par valeur décroissante
+        buy_orders.sort(key=lambda x: x['value'], reverse=True)
+        sell_orders.sort(key=lambda x: x['value'], reverse=True)
 
-        self.pending_orders.extend(orders_to_place)
-
-    def cancel_or_adjust_orders(self, current_orders: List[Dict[str, Union[str, float]]],
-                                target_values: Dict[str, float], current_prices: Dict[str, float],
-                                total_portfolio_value: float):
-        """
-        Cancels or adjusts existing orders based on target values.
-
-        :param current_orders: A list of current open orders.
-        :param target_values: A dictionary with asset symbols as keys and target values as values.
-        :param current_prices: A dictionary with asset symbols as keys and their current prices as values.
-        :param total_portfolio_value: The total value of the portfolio including cash.
-        """
-        for order in current_orders:
-            asset = order['asset']
-            order_type = order['type']
-            order_weight = float(order['weight'])
-            order_value = order_weight * total_portfolio_value
-            target_value = target_values[asset]
-
-            if (order_type == 'buy' and order_value > target_value) or (
-                    order_type == 'sell' and order_value < target_value):
-                self.rportfolio.broker_api.cancel_order(order['id'])
+        self.pending_orders = {"sell": sell_orders, "buy": buy_orders}
 
     def execute_pending_orders(self):
         """
@@ -100,22 +143,39 @@ class PortfolioManager:
         """
         current_cash = self.rportfolio.cash
 
-        for order in self.pending_orders[:]:
-            order_value = order['value']
-            if order['action'] == 'buy' and order_value > current_cash:
+        # Exécuter les ordres de vente
+        for order in self.pending_orders['sell'][:]:
+            success = self.rportfolio.broker_api.place_orders(order)
+            if success:
+                self.pending_orders['sell'].remove(order)
+
+        # Exécuter les ordres d'achat
+        for order in self.pending_orders['buy'][:]:
+            if order['value'] > current_cash:
                 continue  # Skip this order if not enough cash is available
 
-            success = self.rportfolio.broker_api.place_order(order['asset'], order['action'], order['weight'])
+            success = self.rportfolio.broker_api.place_orders(order)
             if success:
-                self.pending_orders.remove(order)
-                if order['action'] == 'buy':
-                    current_cash -= order_value  # Update available cash after a buy order
+                self.pending_orders['buy'].remove(order)
+                current_cash -= order['value']  # Update available cash after a buy order
 
-    def add_pending_order(self, order: Dict[str, Union[str, float]]):
-        """
-        Adds a new order to the pending orders list.
+    def run(self):
+        calib_done = False
+        order_done = False
+        while True:
+            to_calib, to_update, self.rebal_date = Check_and_update_Date(self.rebal_date)
 
-        :param order: A dictionary representing the order to be added.
-        """
-        self.pending_orders.append(order)
-        self.pending_orders.sort(key=lambda x: x['value'])  # Keep orders sorted by value
+            if to_calib and not calib_done:
+                print("Période de calibrage")
+                self.update_portfolio(to_calib)
+                calib_done = True
+                order_done = False
+            if to_update and not order_done:
+                print("Période de rééquilibrage")
+                self.execute_pending_orders()
+                order_done = True
+                calib_done = False
+
+            else:
+                print("Non rééquilibrage")
+            time.sleep(1800)

@@ -47,6 +47,10 @@ class _Model(ABC):
 
         pass
 
+    @abstractmethod
+    def fit_fcast(self, data: _Data, horizon: datetime):
+        pass
+
 
 # Définition de la classe abstraite _Data
 class _Data(ABC):
