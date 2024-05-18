@@ -59,7 +59,7 @@ class API(_BrokerAPI, ABC):
         :return: A list of open orders.
         """
         # Fetch all open orders
-        all_open_orders = self.api.list_orders(status='open')
+        all_open_orders = self.api.list_orders(status="open")
 
         # Filter orders if a list of assets is provided
         if assets:
@@ -84,7 +84,7 @@ class API(_BrokerAPI, ABC):
         Retrieves the latest current prices and their trade dates for a specified list of asset symbols using a single API call.
         Retries if not all prices are obtained.
 
-        :param assets: A list of asset symbols (e.g., ['AAPL', 'GOOGL']).
+        :param assets: A list of asset symbols (e.g., ["AAPL", "GOOGL"]).
         :param retries: Number of retries if prices are missing.
         :param delay: Delay in seconds between retries.
         :return: A dictionary with a date key and a dictionary of asset prices.
@@ -132,28 +132,46 @@ class API(_BrokerAPI, ABC):
         """
         Places multiple market orders through the Alpaca API based on weights relative to the total portfolio value.
 
-        :param orders: A list of orders, each represented as a dictionary with 'asset', 'action', and 'weight'.
+        :param orders: A list of orders, each represented as a dictionary with "asset", "action", and "weight".
         :return: A list of messages indicating the result of each order placement.
 
         Args:
             **kwargs:
         """
         results = []
-        total_portfolio_value = self.get_total_portfolio_value()
 
         for order in orders:
 
             try:
-                self.api.submit_order(
-                    symbol=order["symbol"],
-                    notional=order["notional"],
-                    side=order["side"],
-                    type='market',
-                    time_in_force='day'
-                )
-                results.append(f"Order to {order["side"]} {order["notional"]} shares of {order["symbol"]} placed successfully.")
+                if order["type"] == "notional":
+                    self.api.submit_order(
+                        symbol=order["asset"],
+                        notional=order["value"],
+                        side=order["action"],
+                        type="market",
+                        time_in_force="day"
+                    )
+                    results.append({"success": True,
+                                    "messages": f"Order to {order["side"]} {order["notional"]}"
+                                                f" shares of {order["symbol"]} placed successfully."})
+                elif order["type"] == "qty":
+                    self.api.submit_order(
+                        symbol=order["asset"],
+                        qty=order["units"],
+                        side=order["action"],
+                        type="market",
+                        time_in_force="day"
+                    )
+                    results.append({"success": True,
+                                    "messages": f"Order to {order["side"]} {order["notional"]}"
+                                                f" shares of {order["symbol"]} placed successfully."})
+                else:
+                    raise ValueError(f"Invalid order type: {order["type"]}")
+
             except Exception as e:
-                results.append(f"Failed to place order to {order["side"]} {order["notional"]} shares of {order["symbol"]} . Error: {str(e)}")
+                results.append({"success": False,
+                                "messages": f"Failed to place order to {order["side"]} {order["notional"]}"
+                                            f" shares of {order["symbol"]} . Error: {str(e)}"})
 
         return results
 
@@ -183,7 +201,7 @@ class API(_BrokerAPI, ABC):
         delay = 2  # Delay in seconds before retrying
 
         # Retrieve all open orders
-        all_open_orders = self.api.list_orders(status='open')
+        all_open_orders = self.api.list_orders(status="open")
 
         # Filter orders if a list of assets is provided
         if assets:
@@ -222,7 +240,7 @@ class API(_BrokerAPI, ABC):
 """
 ########### TEST API ##############
 from utils.load import load_json_config
-api_config = load_json_config(r'api_settings/api_settings.json')
+api_config = load_json_config(r"api_settings/api_settings.json")
 alpaca_api = API(api_config)
 print(alpaca_api.get_available_cash())
 print(alpaca_api.get_open_orders(["AAPL", "AMZN", "GOOGL"]))
@@ -230,7 +248,7 @@ print(alpaca_api.get_current_positions(["AAPL", "AMZN", "GOOGL"]))
 print(alpaca_api.get_current_prices(["AAPL", "AMZN", "GOOGL"]))
 
 print(alpaca_api.get_total_portfolio_value(["AAPL", "AMZN", "GOOGL"]))
-#print(alpaca_api.place_orders([{"symbol": 'GOOGL', "notional": 5, "side": 'sell'}]))
+#print(alpaca_api.place_orders([{"symbol": "GOOGL", "notional": 5, "side": "sell"}]))
 #alpaca_api.cancel_all_open_orders()
-#alpaca_api.cancel_order('329b4299-d748-4670-8aa1-ec8b173de6e9')
+#alpaca_api.cancel_order("329b4299-d748-4670-8aa1-ec8b173de6e9")
 """

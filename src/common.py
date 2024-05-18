@@ -3,6 +3,7 @@ import pandas as pd
 from typing import Any
 import exchange_calendars as ecals
 from datetime import datetime, timedelta
+from decimal import Decimal, getcontext, ROUND_DOWN
 
 
 def compute_log_returns(df: pd.DataFrame, scale: float = 100) -> pd.DataFrame:
@@ -87,7 +88,7 @@ def weighting(data: np.ndarray, scheme: str = 'uniform', **kwargs: Any) -> np.nd
     return weightsed_mean
 
 
-def get_last_trading_day(given_date, market):
+def get_last_trading_day(given_date: datetime, market: str) -> datetime:
     """
     Returns the last trading day for the NASDAQ market before the given date.
 
@@ -95,7 +96,8 @@ def get_last_trading_day(given_date, market):
     :return: The last trading day as a datetime object.
 
     Args:
-        market:
+        given_date:
+        market: market like nasdaq
     """
     # NASDAQ calendar
     market_cal = ecals.get_calendar(market)
@@ -113,8 +115,7 @@ def get_last_trading_day(given_date, market):
     return last_trading_day.to_pydatetime()
 
 
-def market_settigs_date(cal_name: str, start: datetime, end: datetime):
-
+def market_settigs_date(cal_name: str, start: datetime, end: datetime) -> list[datetime]:
     # Créer une instance du calendrier pour le marché spécifié
     calendar = ecals.get_calendar(cal_name)
 
@@ -133,7 +134,7 @@ def market_settigs_date(cal_name: str, start: datetime, end: datetime):
     return settigs_hour
 
 
-def Check_and_update_Date(tuples_list):
+def Check_and_update_Date(tuples_list) -> list:
     now = datetime.now()
     # Utiliser une compréhension de liste pour filtrer les tuples dont la seconde date dépasse l'instant présent
     rebalDate = [(before, start, end) for before, start, end in tuples_list if end > now]
@@ -146,3 +147,12 @@ def Check_and_update_Date(tuples_list):
     to_update = rebalDate[0][1] <= now < rebalDate[0][2]
 
     return to_calib, to_update, rebalDate
+
+
+def trunc_decimal(number: float, decimals: int) -> float:
+    # Définir le mode d'arrondi à ROUND_DOWN pour tronquer
+    getcontext().rounding = ROUND_DOWN
+    # Créer le facteur de quantification basé sur le nombre de décimales souhaité
+    factor = Decimal('1.' + '0' * decimals)
+    # Quantizer le nombre à ce facteur
+    return Decimal(number).quantize(factor)

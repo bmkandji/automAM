@@ -1,3 +1,6 @@
+import time
+import threading
+from typing import Dict, List, Union
 from src.abstract import _Model, _Data, _Strategies
 from src.local_portfolio import Portfolio
 from src.remote_portfolio import RemotePortfolio
@@ -5,12 +8,11 @@ from src.models import Model
 from src.data_mn import Data
 from src.strategies import Strategies
 from datetime import datetime, timedelta
-import time
-from typing import Dict, List, Union
 from api import API
 from src.common import (get_last_trading_day,
                         market_settigs_date,
-                        Check_and_update_Date)
+                        Check_and_update_Date,
+                        trunc_decimal)
 from utils import portfolio_tools as pf_t
 
 
@@ -120,48 +122,56 @@ class PortfolioManager:
         buy_orders = []
         sell_orders = []
         for asset, target_value in target_values.items():
-            current_value = float(current_positions.get(asset, 0)) * current_prices[asset]
-            difference = target_value - current_value
-
+            target_qty = target_values.get(asset, 0) / current_prices[asset]
+            difference = target_qty - float(current_positions.get(asset, 0))
+            trad_qty = trunc_decimal(abs(difference), 8)  # Troncature à 8 décimales
+            trad_notional = trunc_decimal(abs(difference)
+                                          * current_prices[asset], 2)  # Troncature à 2 décimales
             if difference > 0:
                 # Pour acheter, on utilise la valeur notionnelle
-                buy_orders.append({'asset': asset, 'action': 'buy', 'value': abs(difference)})
-            elif difference < 0:
+                buy_orders.append({"asset": asset,
+                                   "action": "buy",
+                                   "units": trad_qty,
+                                   "value": trad_notional,
+                                   "type": "notional"})
+            elif difference < 0 and trad_qty < current_positions.get(asset, 0):
                 # Pour vendre, on utilise les unités
-                units_to_sell = abs(difference) / current_prices[asset]
-                sell_orders.append({'asset': asset, 'action': 'sell', 'units': units_to_sell, 'value': abs(difference)})
+                sell_orders.append({"asset": asset,
+                                    "action": "sell",
+                                    "units": trad_qty,
+                                    "value": trad_notional,
+                                    "type": "qty"})
 
         # Trier les ordres par valeur décroissante
-        buy_orders.sort(key=lambda x: x['value'], reverse=True)
-        sell_orders.sort(key=lambda x: x['value'], reverse=True)
+        buy_orders.sort(key=lambda x: x["value"], reverse=True)
+        sell_orders.sort(key=lambda x: x["value"], reverse=True)
 
         self.pending_orders = {"sell": sell_orders, "buy": buy_orders}
 
-    def execute_pending_orders(self):
+    def execute_orders(self):
         """
         Execute pending orders in order of their value and remove them from the list if successful.
         """
-        current_cash = self.rportfolio.cash
 
         # Exécuter les ordres de vente
-        for order in self.pending_orders['sell'][:]:
-            success = self.rportfolio.broker_api.place_orders(order)
-            if success:
-                self.pending_orders['sell'].remove(order)
+        for order in self.pending_orders["sell"][:]:
+            result = self.rportfolio.broker_api.place_orders([order])
+            if result[0]["success"]:
+                self.pending_orders["sell"].remove(order)
 
-        # Exécuter les ordres d'achat
-        for order in self.pending_orders['buy'][:]:
-            if order['value'] > current_cash:
+        # Exécuter les ordres d"achat
+        for order in self.pending_orders["buy"][:]:
+            current_cash = self.rportfolio.cash
+            if order["value"] > current_cash:
                 continue  # Skip this order if not enough cash is available
 
-            success = self.rportfolio.broker_api.place_orders(order)
-            if success:
-                self.pending_orders['buy'].remove(order)
-                current_cash -= order['value']  # Update available cash after a buy order
+            result = self.rportfolio.broker_api.place_orders([order])
+            if result[0]["success"]:
+                self.pending_orders["buy"].remove(order)
+                current_cash -= order["value"]  # Update available cash after a buy order
 
-    def run(self):
+    def start(self):
         calib_done = False
-        order_done = False
         while True:
             to_calib, to_update, self.rebal_date = Check_and_update_Date(self.rebal_date)
 
@@ -169,13 +179,16 @@ class PortfolioManager:
                 print("Période de calibrage")
                 self.update_portfolio(to_calib)
                 calib_done = True
-                order_done = False
-            if to_update and not order_done:
+            if to_update:
                 print("Période de rééquilibrage")
-                self.execute_pending_orders()
-                order_done = True
+                self.execute_orders()
                 calib_done = False
 
             else:
                 print("Non rééquilibrage")
-            time.sleep(1800)
+            time.sleep(900)
+
+    def run(self):
+        thread = threading.Thread(target=self.start)
+        thread.daemon = True
+        thread.start()
