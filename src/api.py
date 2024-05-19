@@ -3,6 +3,7 @@ from abc import ABC
 from typing import List, Dict, Union
 from src.abstract import _BrokerAPI
 import time
+from datetime import timezone
 
 
 class API(_BrokerAPI, ABC):
@@ -108,7 +109,7 @@ class API(_BrokerAPI, ABC):
                 break
             if attempt < retries - 1:
                 time.sleep(delay)  # Wait before retrying
-        prices["date"] = date
+        prices["date"] = date.astimezone(timezone.utc).tz_localize(None)
         return prices
 
     def get_total_portfolio_value(self, assets: List[str] = None) -> float:
@@ -152,8 +153,8 @@ class API(_BrokerAPI, ABC):
                         time_in_force="day"
                     )
                     results.append({"success": True,
-                                    "messages": f"Order to {order["side"]} {order["notional"]}"
-                                                f" shares of {order["symbol"]} placed successfully."})
+                                    "messages": f"Order to {order["action"]} {order["value"]}"
+                                                f" shares of {order["asset"]} in {order["type"]} placed successfully."})
                 elif order["type"] == "qty":
                     self.api.submit_order(
                         symbol=order["asset"],
@@ -163,15 +164,15 @@ class API(_BrokerAPI, ABC):
                         time_in_force="day"
                     )
                     results.append({"success": True,
-                                    "messages": f"Order to {order["side"]} {order["notional"]}"
-                                                f" shares of {order["symbol"]} placed successfully."})
+                                    "messages": f"Order to {order["action"]} {order["units"]}"
+                                                f" shares of {order["asset"]} in {order["type"]} placed successfully."})
                 else:
                     raise ValueError(f"Invalid order type: {order["type"]}")
 
             except Exception as e:
                 results.append({"success": False,
-                                "messages": f"Failed to place order to {order["side"]} {order["notional"]}"
-                                            f" shares of {order["symbol"]} . Error: {str(e)}"})
+                                "messages": f"Failed to place order to {order["action"]}"
+                                            f"{order["asset"]} . Error: {str(e)}"})
 
         return results
 
@@ -246,9 +247,8 @@ print(alpaca_api.get_available_cash())
 print(alpaca_api.get_open_orders(["AAPL", "AMZN", "GOOGL"]))
 print(alpaca_api.get_current_positions(["AAPL", "AMZN", "GOOGL"]))
 print(alpaca_api.get_current_prices(["AAPL", "AMZN", "GOOGL"]))
-
 print(alpaca_api.get_total_portfolio_value(["AAPL", "AMZN", "GOOGL"]))
-#print(alpaca_api.place_orders([{"symbol": "GOOGL", "notional": 5, "side": "sell"}]))
-#alpaca_api.cancel_all_open_orders()
+#print(alpaca_api.place_orders([{"asset": "GOOGL", "units": 0.01, "action": "buy", "type": "qty"}]))
+#print(alpaca_api.cancel_all_open_orders())
 #alpaca_api.cancel_order("329b4299-d748-4670-8aa1-ec8b173de6e9")
 """

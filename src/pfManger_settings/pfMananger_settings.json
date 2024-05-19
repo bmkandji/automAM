@@ -1,5 +1,5 @@
 {
-    "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"],
+    "symbols": ["AAPL", "GOOGL", "MSFT"],
 
     "market": "XNYS",
 
@@ -21,7 +21,7 @@
 
     "model": {
                 "model_config": {
-                    "model_path": "C:/Users/MatarKANDJI/automAM/src/model_settings/dcc_model_coef.rds",
+                    "model_path": "/src/model_settings/dcc_model_coef.rds",
                     "model": "sGARCH",
                     "armaOrder": [5, 1],
                     "distribution_garch": "norm",
@@ -37,23 +37,17 @@
             "ref_portfolios": {
                 "AAPL": {
                     "capital": null,
-                    "next_weights": [0.0, 1.0, 0.0, 0.0, 0.0],
+                    "next_weights": [0.0, 1.0, 0.0, 0.0],
                     "weights": null
                 },
                 "GOOGL": {
                     "capital": null,
-                    "next_weights": [0.0, 0.0, 1.0, 0.0, 0.0],
+                    "next_weights": [0.0, 0.0, 1.0, 0.0],
                     "weights": null
                 },
                 "MSFT": {
                     "capital": null,
-                    "next_weights": [0.0, 0.0, 0.0, 1.0, 0.0],
-                    "weights": null
-
-                },
-                "^GSPC": {
-                    "capital": null,
-                    "next_weights": [0.0, 0.0, 0.0, 0.0, 1.0],
+                    "next_weights": [0.0, 0.0, 0.0, 1.0],
                     "weights": null
 
                 },
@@ -84,5 +78,6 @@
                     },
 
     "rportfolio" : {
-                    }
+                    },
+  "pm_manger": "/src/pfManger_settings/pfManager.pickle"
 }

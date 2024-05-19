@@ -1,9 +1,11 @@
 import numpy as np
 import pandas as pd
 from typing import Any
+from decimal import Decimal, getcontext, ROUND_DOWN
 import exchange_calendars as ecals
 from datetime import datetime, timedelta
-from decimal import Decimal, getcontext, ROUND_DOWN
+from typing import List, Tuple
+import requests
 
 
 def compute_log_returns(df: pd.DataFrame, scale: float = 100) -> pd.DataFrame:
@@ -88,60 +90,92 @@ def weighting(data: np.ndarray, scheme: str = 'uniform', **kwargs: Any) -> np.nd
     return weightsed_mean
 
 
-def get_last_trading_day(given_date: datetime, market: str) -> datetime:
+def get_last_trading_day(given_date: str, market: str) -> datetime:
     """
-    Returns the last trading day for the NASDAQ market before the given date.
+    Returns the last trading day for the specified market before the given date.
 
-    :param given_date: The given date as a datetime object.
+    :param given_date: The given date as a string in the format '2024-05-17 15:59:52.543394924-04:00'.
+    :param market: The market identifier, e.g., 'XNYS' for New York Stock Exchange.
     :return: The last trading day as a datetime object.
-
-    Args:
-        given_date:
-        market: market like nasdaq
     """
-    # NASDAQ calendar
-    market_cal = ecals.get_calendar(market)
-
-    # Convert the given date to a pandas Timestamp object
+    # Parse the given_date string to a pandas Timestamp object
     given_date = pd.Timestamp(given_date)
+
+    # Convert to UTC and then make it timezone naive
+    given_date = given_date.floor('D')
+
+    # Get the calendar for the specified market
+    market_cal = ecals.get_calendar(market)
 
     # Get the schedule for the past month up to the given date
     one_month_ago = given_date - pd.DateOffset(months=1)
     schedule = market_cal.sessions_in_range(one_month_ago, given_date)
 
+    # Check if there are trading days in the schedule
+    if len(schedule) == 0:
+        raise ValueError("No trading days found in the past month up to the given date.")
+
     # Find the last trading day before the given date
-    last_trading_day = schedule[schedule < given_date][-1]
+    last_trading_day = schedule[schedule <= given_date][-1]
+
+    # Convert the last trading day to UTC
+    last_trading_day = pd.Timestamp(last_trading_day).tz_localize('UTC')
 
     return last_trading_day.to_pydatetime()
 
 
-def market_settigs_date(cal_name: str, start: datetime, end: datetime) -> list[datetime]:
-    # Créer une instance du calendrier pour le marché spécifié
+def market_settings_date(cal_name: str, start: datetime, end: datetime) -> List[Tuple[datetime, datetime, datetime]]:
+    """
+    Generates a list of tuples containing the market settings dates with open, close, and extended hours.
+
+    :param cal_name: The name of the market calendar.
+    :param start: The start date as a datetime object.
+    :param end: The end date as a datetime object.
+    :return: A list of tuples with market open, close, and extended hours dates.
+    """
+    # Create a calendar instance for the specified market
     calendar = ecals.get_calendar(cal_name)
 
-    # Obtenir les jours ouvrés dans la plage de dates donnée
-    trading_days = calendar.sessions_in_range(start, end)
+    # Ensure start and end dates are datetime objects
+    start = datetime(start.year, start.month, start.day)
+    end = datetime(end.year, end.month, end.day)
 
-    # Ajouter une heure après l'ouverture à chaque jour ouvré
-    open_session = [calendar.session_open(session) for session in trading_days]
+    # Get the last session available in the calendar
+    last_session = calendar.last_session
 
-    # Ajouter une heure après l'ouverture à chaque jour ouvré
-    settigs_hour = [(start_session - timedelta(hours=1),
-                     start_session,
-                     start_session + timedelta(hours=1))
-                    for start_session in open_session]
+    # Initialize the list of open sessions
+    open_sessions = []
 
-    return settigs_hour
+    # Get trading days in the given date range up to the last session available
+    trading_days = calendar.sessions_in_range(start, min(end, last_session))
+    open_sessions.extend([calendar.session_open(session) for session in trading_days])
+
+    # If the end date exceeds the last session, generate future dates manually
+    current_date = last_session + timedelta(days=1)
+    while current_date <= end:
+        if current_date.weekday() < 5:  # Monday to Friday
+            # Only add the session if the market has defined an open time
+            if current_date in calendar.opens.index:
+                open_sessions.append(calendar.opens.loc[current_date])
+        current_date += timedelta(days=1)
+
+    # Add one hour before and after the open time to each trading day
+    settings_hours = [(open_session - timedelta(hours=1),
+                       open_session,
+                       open_session + timedelta(hours=1))
+                      for open_session in open_sessions]
+
+    return settings_hours
 
 
 def Check_and_update_Date(tuples_list) -> list:
-    now = datetime.now()
+    now = get_current_time()
     # Utiliser une compréhension de liste pour filtrer les tuples dont la seconde date dépasse l'instant présent
     rebalDate = [(before, start, end) for before, start, end in tuples_list if end > now]
 
     # Vérifier si la liste est vide après le filtrage
     if not rebalDate:
-        return False, rebalDate
+        return False, False, rebalDate
     to_calib = rebalDate[0][0] <= now < rebalDate[0][1]
     # Vérifier si maintenant est entre le début et la fin du premier intervalle restant
     to_update = rebalDate[0][1] <= now < rebalDate[0][2]
@@ -150,9 +184,40 @@ def Check_and_update_Date(tuples_list) -> list:
 
 
 def trunc_decimal(number: float, decimals: int) -> float:
+    """
+    Truncate a decimal number to a specific number of decimal places.
+
+    :param number: The decimal value to be truncated.
+    :param decimals: The number of decimal places to truncate to.
+    :return: The truncated decimal value.
+    """
     # Définir le mode d'arrondi à ROUND_DOWN pour tronquer
     getcontext().rounding = ROUND_DOWN
     # Créer le facteur de quantification basé sur le nombre de décimales souhaité
     factor = Decimal('1.' + '0' * decimals)
     # Quantizer le nombre à ce facteur
     return Decimal(number).quantize(factor)
+
+
+def get_current_time():
+    # URL de l'API World Time pour UTC
+    url = "http://worldtimeapi.org/api/timezone/Etc/UTC"
+
+    # Faire une requête GET à l'API
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        # Extraire les données JSON de la réponse
+        data = response.json()
+
+        # Obtenir l'heure actuelle en UTC depuis les données JSON
+        utc_time_str = data['datetime']
+
+        # Convertir la chaîne de caractères en objet datetime avec fuseau horaire
+        utc_time = datetime.fromisoformat(utc_time_str.replace('Z', '+00:00'))
+
+        return utc_time
+    else:
+        # Gestion des erreurs
+        print(f"Erreur lors de la récupération de l'heure UTC : {response.status_code}")
+        return None

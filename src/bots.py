@@ -1,6 +1,8 @@
 import time
 import threading
 from typing import Dict, List, Union
+import numpy as np
+import pickle
 from src.abstract import _Model, _Data, _Strategies
 from src.local_portfolio import Portfolio
 from src.remote_portfolio import RemotePortfolio
@@ -10,19 +12,22 @@ from src.strategies import Strategies
 from datetime import datetime, timedelta
 from api import API
 from src.common import (get_last_trading_day,
-                        market_settigs_date,
+                        market_settings_date,
                         Check_and_update_Date,
-                        trunc_decimal)
+                        trunc_decimal,
+                        get_current_time)
 from utils import portfolio_tools as pf_t
 
 
 class PortfolioManager:
-    def __init__(self, pm_config: Dict[str, Dict[str, Union[str, int, float]]]) -> None:
+    def __init__(self, pm_settings: Dict[str, Dict[str, Union[str, int, float]]]) -> None:
         """
         Initializes the portfolio manager with a brokerage API.
 
-        :param pm_config: A configuration dictionary for the portfolio manager.
+        :param pm_settings: A configuration dictionary for the portfolio manager.
         """
+        # noinspection PyShadowingNames
+        pm_config = pm_settings.copy()
         # Update configuration with symbols and market information
         pm_config["data"].update({"symbols": pm_config["symbols"],
                                   "horizon": pm_config["horizon"]})
@@ -38,14 +43,15 @@ class PortfolioManager:
         strat_config = pm_config["strategy"]
         api_config = pm_config["api"]
 
-        today = datetime.now()
+        today = get_current_time()
         end_date = today + timedelta(days=365)
 
         # Get rebalance dates (one hour after market open) for the next year
-        self.rebal_date: List[datetime] = market_settigs_date(pm_config["market"], today, end_date)
+        self.rebal_date: List[datetime] = market_settings_date(pm_config["market"], today, end_date)
 
         # Fetch historical data
-        self.data: _Data = Data(pm_config["data"]).fetch_data(
+        self.data: _Data = Data(pm_config["data"])
+        self.data.fetch_data(
             today - timedelta(days=pm_config["hist_dataLen"]), today)
 
         # Fit and forecast using the model
@@ -58,16 +64,43 @@ class PortfolioManager:
         self.rportfolio: RemotePortfolio = RemotePortfolio(API(api_config), pm_config["rportfolio"])
         self.rportfolio.refresh_portfolio()
         position = self.rportfolio.weights()
-
         # Initialize local portfolio with the refreshed positions
-        self.portfolio: Portfolio = (Portfolio(
+
+        self.portfolio: Portfolio = Portfolio(
             pm_config["portfolio"],
             position["capital"],
-            position["weights"],
-            get_last_trading_day(position["date"], pm_config["market"])).
-                                     update_metrics(self.data))
+            np.array([position["weights"][asset]
+                      for asset in
+                      ["cash"] + self.rportfolio.pf_config["symbols"]]),
+            get_last_trading_day(position["date"], pm_config["market"]))
         # Initialize pending orders list
         self.pending_orders: Dict[str, List[Dict[str, Union[str, float]]]] = {}
+        self.pm_manager: str = pm_config["pm_manger"]
+        self.calib_done: bool = False
+
+    def __save_state(self):
+        """
+        Private method to save the state of the current object to a file specified in self.pm_manager.
+        """
+        try:
+            with open(self.pm_manager, 'wb') as f:
+                pickle.dump(self, f)
+            print("State saved successfully.")
+        except (IOError, pickle.PickleError) as e:
+            print(f"Failed to save state: {e}")
+
+    def __load_state(self):
+        """
+        Private method to load the state of the current object from a file specified in self.pm_manager.
+        This method updates the current object's attributes with the loaded state.
+        """
+        try:
+            with open(self.pm_manager, 'rb') as f:
+                loaded_object = pickle.load(f)
+            self.__dict__.update(loaded_object.__dict__)
+            print("State loaded successfully.")
+        except (IOError, pickle.PickleError) as e:
+            print(f"Failed to load state: {e}")
 
     def update_portfolio(self, to_calib: bool = False):
         """
@@ -99,9 +132,9 @@ class PortfolioManager:
                                update_ref_pf=True)
 
         capital_weights = self.rportfolio.weights()
-        weights = [capital_weights["weight"][asset]
-                   for asset in
-                   ["cash"] + self.portfolio.pf_config["symbols"]]
+        weights = np.array([capital_weights["weights"][asset]
+                            for asset in
+                            ["cash"] + self.portfolio.pf_config["symbols"]])
 
         next_capital = pf_t.capital_fw(self.portfolio.next_weights, weights,
                                        self.strategy.strat_config["fee_rate"], capital_weights["capital"])
@@ -121,6 +154,7 @@ class PortfolioManager:
 
         buy_orders = []
         sell_orders = []
+        fee_norm = 1 / (1 - self.strategy.strat_config["fee_rate"])
         for asset, target_value in target_values.items():
             target_qty = target_values.get(asset, 0) / current_prices[asset]
             difference = target_qty - float(current_positions.get(asset, 0))
@@ -132,7 +166,7 @@ class PortfolioManager:
                 buy_orders.append({"asset": asset,
                                    "action": "buy",
                                    "units": trad_qty,
-                                   "value": trad_notional,
+                                   "value": trunc_decimal(fee_norm * trad_notional, 1),
                                    "type": "notional"})
             elif difference < 0 and trad_qty < current_positions.get(asset, 0):
                 # Pour vendre, on utilise les unités
@@ -151,44 +185,122 @@ class PortfolioManager:
     def execute_orders(self):
         """
         Execute pending orders in order of their value and remove them from the list if successful.
+
+        Input:
+        - self.pending_orders: A dictionary containing lists of pending buy and sell orders.
+          Each order is assumed to be a dictionary with relevant details such as 'value'.
+
+        Output:
+        - None. This method updates self.pending_orders by removing successfully executed orders.
         """
 
-        # Exécuter les ordres de vente
+        # Execute sell orders
+        # Iterate over a copy of the list to allow safe removal of items
         for order in self.pending_orders["sell"][:]:
             result = self.rportfolio.broker_api.place_orders([order])
             if result[0]["success"]:
                 self.pending_orders["sell"].remove(order)
+                print(f"Sell order executed and removed: {order}")
 
-        # Exécuter les ordres d"achat
+        # Adjust buy orders if there are no pending sell orders and there are buy orders
+        if not self.pending_orders["sell"] and self.pending_orders["buy"]:
+            current_cash = self.rportfolio.cash
+            total_buy_value = sum(order["value"] for order in self.pending_orders["buy"])
+
+            if total_buy_value > current_cash:
+                # Scale down each buy order proportionally if total buy value exceeds available cash
+                for order in self.pending_orders["buy"]:
+                    order["value"] = trunc_decimal(order["value"] * (current_cash / total_buy_value) - 0.01, 2)
+
+                # Remove buy orders with value less than or equal to 0.05 after adjustment
+                self.pending_orders["buy"] = [order for order in self.pending_orders["buy"] if order["value"] > 0]
+
+        # Execute buy orders
+        # Iterate over a copy of the list to allow safe removal of items
         for order in self.pending_orders["buy"][:]:
             current_cash = self.rportfolio.cash
             if order["value"] > current_cash:
+                print(f"Not enough cash for buy order: {order}")
                 continue  # Skip this order if not enough cash is available
 
             result = self.rportfolio.broker_api.place_orders([order])
             if result[0]["success"]:
                 self.pending_orders["buy"].remove(order)
-                current_cash -= order["value"]  # Update available cash after a buy order
+                print(f"Buy order executed and removed: {order}")
 
     def start(self):
-        calib_done = False
-        while True:
+        """
+        Start the portfolio management process.
+
+        The method operates in a loop, performing calibration and rebalancing
+        based on specific dates. It checks whether calibration or rebalancing
+        is needed, executes the necessary operations, and then sleeps until
+        the next significant event.
+
+        Input:
+        - self.rebal_date (list of tuples): List containing tuples of rebalancing dates.
+          Each tuple has two elements: the start and end of a rebalancing period.
+
+        Output:
+        - None. The method runs indefinitely, managing the portfolio based on dates.
+
+        Workflow:
+        - Continuously check and update dates using Check_and_update_Date.
+        - If calibration is needed and not already done, update the portfolio.
+        - If rebalancing is needed, execute orders and update the portfolio if necessary.
+        - Sleep until the next significant event (calibration or rebalancing).
+        """
+        self.__load_state()
+        while self.rebal_date:
             to_calib, to_update, self.rebal_date = Check_and_update_Date(self.rebal_date)
 
-            if to_calib and not calib_done:
-                print("Période de calibrage")
+            if to_calib and not self.calib_done:
+                print("Calibration period")
                 self.update_portfolio(to_calib)
-                calib_done = True
+                self.calib_done = True
+                self.__save_state()
+                now = get_current_time()
+                to_sleep = max((self.rebal_date[0][1] - now).total_seconds(), 0)
+                print(f"Sleeping for {to_sleep} seconds during calibration period")
+                time.sleep(to_sleep)
+                continue
+
             if to_update:
-                print("Période de rééquilibrage")
+                print("Rebalancing period")
+                if self.portfolio.date != get_last_trading_day(self.rebal_date[0][1],
+                                                               pm_config["market"]):
+                    self.update_portfolio(True)
+
                 self.execute_orders()
-                calib_done = False
+                if not self.pending_orders["buy"] and not self.pending_orders["sell"]:
+                    now = get_current_time()
+                    to_sleep = max((self.rebal_date[1][0] - now).total_seconds(), 0)
+                    print(f"Sleeping for {to_sleep} seconds after rebalancing")
+                    time.sleep(to_sleep)
+                self.calib_done = False
+                continue
 
             else:
-                print("Non rééquilibrage")
-            time.sleep(900)
+                print("Non-rebalancing period")
+                self.calib_done = False
+                now = get_current_time()
+                to_sleep = max((self.rebal_date[1][0] - now).total_seconds(), 0)
+                print(f"Sleeping for {to_sleep} seconds during non-rebalancing period")
+                time.sleep(to_sleep)
+
+
+            # Add a sleep period to avoid a too-fast infinite loop
+            time.sleep(30)
 
     def run(self):
         thread = threading.Thread(target=self.start)
         thread.daemon = True
         thread.start()
+
+
+########### TEST PM ##############
+from utils.load import load_json_config
+
+pm_config = load_json_config(r"pfManger_settings/pfMananger_settings.json")
+bot = PortfolioManager(pm_config)
+bot.start()

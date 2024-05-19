@@ -3,7 +3,7 @@ from src.common import compute_log_returns
 from src.abstract import _Data
 import alpaca_trade_api as tradeapi
 import pandas as pd
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class Data(_Data):
@@ -37,7 +37,7 @@ class Data(_Data):
                 stock_data = yf.download(symbol, start=start_date, end=end_date)
                 # Create a temporary DataFrame to store the close prices
                 temp_data = pd.DataFrame({
-                    'Date': stock_data.index,
+                    'Date': stock_data.index.tz_localize(timezone.utc),
                     'Close': stock_data['Adj Close'],  # Use 'Adj Close' for adjusted closing prices
                     'Symbol': symbol
                 })

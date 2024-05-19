@@ -2,6 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Union
 from datetime import datetime
+from src.common import get_current_time
 from utils.check import check_configs  # Importation des utilitaires nécessaires
 import pandas as pd
 import numpy as np
@@ -92,14 +93,15 @@ class _Data(ABC):
         Méthode abstraite pour mettre à jour les données jusqu'à une nouvelle date de fin.
         La date de fin est optionnelle; si non spécifiée, peut-être mise à jour jusqu'à la date courante.
         """
+        if new_end_date is None:
+            new_end_date = get_current_time()
+
         if self.data.empty:
             raise ValueError("please fetch before update")
 
         if self.data_config["end_date"] >= new_end_date:
             raise ValueError("The please provide recent date for update")
 
-        if new_end_date is None:
-            new_end_date = datetime.today().strftime('%Y-%m-%d')
         start_date_update = self._data.index.max()
         new_rows_added = self.fetch_data(start_date_update, new_end_date)
 
@@ -123,7 +125,8 @@ class _Data(ABC):
 
     def window_returns(self, start_date: datetime, end_date: datetime) -> np.ndarray:
         """
-        Filter the instance's DataFrame based on a date range, exclusive of the start date and inclusive of the end date,
+        Filter the instance's DataFrame based on a date range,
+         exclusive of the start date and inclusive of the end date,
         and return an array containing the sum of each column in the filtered DataFrame.
 
         Args:
