@@ -221,7 +221,7 @@ class PortfolioManager:
         if (not self.pending_orders["sell"]
                 and not self.rportfolio.open_orders_Byside()["sell_open_orders"]
                 and self.pending_orders["buy"]):
-
+            time.sleep(15)
             total_buy_value = sum(order["value"] for order in self.pending_orders["buy"])
             current_cash = self.rportfolio.cash
 

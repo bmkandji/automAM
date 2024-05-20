@@ -64,8 +64,8 @@
                 },
 
     "api": {
-                "api_key": "PKEHJBQLY9D7AEBB5NN0",
-                "api_secret": "rjY62EaFqw1fNEgWJXJdh9muUEEDxRPrhTtX348F",
+                "api_key": "PKED5LMV7D0E5HA20UI6",
+                "api_secret": "xFDKqdNunhcd7vTADxvTJMeM3iUsDmRH9iDzslvb",
                 "base_url": "https://paper-api.alpaca.markets",
                 "api_version": "v2",
                 "cash": "USD"
