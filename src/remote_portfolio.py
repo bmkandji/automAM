@@ -1,5 +1,6 @@
 from src.abstract import _BrokerAPI
-from typing import Dict, Any
+from typing import Dict, Any, List
+import alpaca_trade_api as tradeapi
 
 
 class RemotePortfolio:
@@ -11,10 +12,6 @@ class RemotePortfolio:
         """
         self._pf_config = pf_config
         self._broker_api = broker_api  # Stores the broker API instance
-        self._positions = None  # Initializes positions to None
-        self._open_orders = None  # Initializes open orders to None
-        self._cash = None  # Initializes available cash to None
-        self.refresh_portfolio()  # Refreshes portfolio data
 
     @property
     def pf_config(self) -> Dict[str, Any]:
@@ -37,16 +34,16 @@ class RemotePortfolio:
 
         :return: A dictionary of current positions.
         """
-        return self._positions
+        return self._broker_api.get_current_positions(self._pf_config["symbols"])
 
     @property
-    def open_orders(self) -> Any:
+    def open_orders(self) -> List[tradeapi.entity.Order]:
         """
         Retrieves all open orders.
 
         :return: The list of open orders.
         """
-        return self._open_orders
+        return self._broker_api.get_open_orders(self._pf_config["symbols"])
 
     @property
     def cash(self) -> float:
@@ -55,7 +52,20 @@ class RemotePortfolio:
 
         :return: The amount of available cash.
         """
-        return self._cash
+        return self._broker_api.get_available_cash()
+
+    def open_orders_Byside(self) -> dict[List[tradeapi.entity.Order]]:
+        """
+        Fetches all open orders from the Alpaca account and separates them into buy and sell orders.
+
+        :return: A dictionary with 'buy' and 'sell' as keys and lists of open orders as values.
+        """
+        # Fetch all open orders
+        open_orders = self.open_orders
+        sell_open_orders = [order for order in open_orders if order.side == 'sell']
+        buy_open_order = [order for order in open_orders if order.side == 'sell']
+
+        return {"sell_open_orders": sell_open_orders, "buy_open_order": buy_open_order}
 
     def weights(self) -> Dict[str, Any]:
         """
@@ -66,7 +76,7 @@ class RemotePortfolio:
         # Cancel all open orders first to stabilize the portfolio
         # Retrieve current positions and cash balance
         positions = self._broker_api.get_current_positions(self._pf_config["symbols"])
-        cash = self._broker_api.get_available_cash()
+        cash = self.cash
 
         # If positions are empty and only cash is available
         if not positions:
@@ -86,14 +96,11 @@ class RemotePortfolio:
         portfolio_weights["cash"] = cash / total_capital
         return {"date": prices["date"], "capital": total_capital, "weights": portfolio_weights}
 
-    def refresh_portfolio(self) -> None:
+    def cancel_all_open_orders(self) -> None:
         """
         Updates the portfolio information by retrieving the latest data from the broker's API.
         """
         self._broker_api.cancel_all_open_orders(self._pf_config["symbols"])
-        self._positions = self._broker_api.get_current_positions(self._pf_config["symbols"])  # Updates positions
-        self._open_orders = self._broker_api.get_open_orders(self._pf_config["symbols"])  # Updates open orders
-        self._cash = self._broker_api.get_available_cash()  # Updates available cash
 
 """
 ########### TEST API ##############
@@ -103,6 +110,6 @@ api_config = load_json_config(r'api_settings/api_settings.json')
 rpf_config = load_json_config(r'portfolio_settings/rpf_settings.json')
 alpaca_api = API(api_config)
 rPortfolio = RemotePortfolio(alpaca_api, rpf_config)
-rPortfolio.refresh_portfolio()
+rPortfolio.cancel_all_open_orders()
 print(rPortfolio.weights())
 """

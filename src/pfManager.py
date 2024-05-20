@@ -60,7 +60,7 @@ class PortfolioManager:
 
         # Initialize remote portfolio and refresh it
         self.rportfolio: RemotePortfolio = RemotePortfolio(API(api_config), pm_config["rportfolio"])
-        self.rportfolio.refresh_portfolio()
+        self.rportfolio.cancel_all_open_orders()
         position = self.rportfolio.weights()
         # Initialize local portfolio with the refreshed positions
 
@@ -127,7 +127,7 @@ class PortfolioManager:
 
             while self.rportfolio.open_orders and attempts < max_attempts:
                 time.sleep(60)
-                self.rportfolio.refresh_portfolio()
+                self.rportfolio.cancel_all_open_orders()
                 attempts += 1
 
             if self.rportfolio.open_orders:
@@ -169,9 +169,6 @@ class PortfolioManager:
         buy_orders = []
         sell_orders = []
         fee_norm = 1 / (1 - self.strategy.strat_config["fee_rate"])
-        print(current_prices)
-        print(current_positions)
-        print(target_values)
         for asset, target_value in target_values.items():
             target_qty = target_values.get(asset, 0) / current_prices[asset]
             difference = target_qty - float(current_positions.get(asset, 0))
@@ -221,17 +218,21 @@ class PortfolioManager:
                 print(f"Sell order executed and removed: {order}")
 
         # Adjust buy orders if there are no pending sell orders and there are buy orders
-        if not self.pending_orders["sell"] and self.pending_orders["buy"]:
-            current_cash = self.rportfolio.cash
+        if (not self.pending_orders["sell"]
+                and not self.rportfolio.open_orders_Byside()["sell_open_orders"]
+                and self.pending_orders["buy"]):
+
             total_buy_value = sum(order["value"] for order in self.pending_orders["buy"])
+            current_cash = self.rportfolio.cash
 
             if total_buy_value > current_cash:
+
                 # Scale down each buy order proportionally if total buy value exceeds available cash
                 for order in self.pending_orders["buy"]:
                     order["value"] = trunc_decimal(order["value"] * (current_cash / total_buy_value) - 0.01, 1)
 
                 # Remove buy orders with value less than or equal to 0.05 after adjustment
-                self.pending_orders["buy"] = [order for order in self.pending_orders["buy"] if order["value"] > 0]
+                self.pending_orders["buy"] = [order for order in self.pending_orders["buy"] if order["value"] > 0.1]
 
         # Execute buy orders
         # Iterate over a copy of the list to allow safe removal of items
@@ -317,6 +318,6 @@ class PortfolioManager:
 ########### TEST PM ##############
 from utils.load import load_json_config
 
-pm_config = load_json_config(r"pfManger_settings/pfMananger_settings.json")
+pm_config = load_json_config(r"pfManger_settings/pfPaperMananger_settings.json")
 bot = PortfolioManager(pm_config)
 bot.start()

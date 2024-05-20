@@ -159,7 +159,7 @@ def market_settings_date(cal_name: str, start: datetime, end: datetime) -> List[
     # Add one hour before and after the open time to each trading day
     settings_hours = [(open_session - timedelta(hours=2),
                        open_session,
-                       open_session + timedelta(hours=2))
+                       open_session + timedelta(hours=10))
                       for open_session in open_sessions]
 
     return settings_hours
