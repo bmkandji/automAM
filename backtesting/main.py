@@ -6,7 +6,7 @@ from src.strategies import Strategies
 from src.models import Model
 from src.local_portfolio import Portfolio
 from utils.load import load_json_config
-import datetime as dt
+from datetime import timedelta, datetime
 import copy
 import exchange_calendars as ecals
 import matplotlib.dates as mdates
@@ -28,14 +28,16 @@ def load_configs():
 # Initialize data, model, portfolio, and strategy
 def initialize_components(data_config, model_config, pf_config, strat_config):
     data = Data(data_config)
-    data.fetch_data(dt.datetime(2005, 1, 1), dt.datetime(2018, 1, 3))
+    data.fetch_data(pd.Timestamp(year=2005, month=1, day=1).tz_localize('UTC'),
+                    pd.Timestamp(year=2018, month=1, day=3).tz_localize('UTC'))
     model = Model(model_config)
-    horizon = dt.datetime(2018, 1, 10)
+    horizon = pd.Timestamp(year=2018, month=1, day=10).tz_localize('UTC')
     model.fit_fcast(data, horizon)
 
     n = len(pf_config["symbols"]) + 1
     weights = np.ones(n) / n
-    portfolio = Portfolio(pf_config, 1, weights, dt.datetime(2018, 1, 2))
+    portfolio = Portfolio(pf_config, 1, weights,
+                          pd.Timestamp(year=2018, month=1, day=2).tz_localize('UTC'))
     portfolio.update_metrics(data)
 
     strategy = Strategies(strat_config)
@@ -45,9 +47,11 @@ def initialize_components(data_config, model_config, pf_config, strat_config):
 
 # Retrieve NASDAQ trading days
 def get_trading_days(start_date, end_date, market):
+    start_date = datetime(start_date.year, start_date.month, start_date.day)
+    end_date = datetime(end_date.year, end_date.month, end_date.day)
     nasdaq_cal = ecals.get_calendar(market)
-    sessions = nasdaq_cal.sessions_in_range(pd.Timestamp(start_date), pd.Timestamp(end_date))
-    return [session.to_pydatetime() for session in sessions]
+    sessions = nasdaq_cal.sessions_in_range(start_date, end_date)
+    return [pd.Timestamp(session).tz_localize('UTC') for session in sessions]
 
 
 # Dynamic plotting setup
@@ -72,7 +76,7 @@ def dynamic_plotting(date_list, portfolio, data, model):
 
     for item in range(len(date_list) - 11):
         current_date = date_list[item]
-        data.update_data(current_date + dt.timedelta(days=1))
+        data.update_data(current_date + timedelta(days=1))
         model.fit_fcast(data, date_list[item + 10])
         portfolio.forward(data)
         portfolios.append(copy.deepcopy(portfolio))
@@ -101,8 +105,8 @@ def dynamic_plotting(date_list, portfolio, data, model):
 def main():
     data_config, model_config, pf_config, strat_config = load_configs()
     data, model, portfolio = initialize_components(data_config, model_config, pf_config, strat_config)
-    start_date = dt.datetime(2018, 1, 3)
-    end_date = dt.datetime(2024, 5, 10)
+    start_date = pd.Timestamp(year=2018, month=1, day=3).tz_localize('UTC')
+    end_date = pd.Timestamp(year=2024, month=5, day=10).tz_localize('UTC')
     date_list = get_trading_days(start_date, end_date, portfolio.pf_config["market"])
     dynamic_plotting(date_list, portfolio, data, model)
 

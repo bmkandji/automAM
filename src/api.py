@@ -43,10 +43,12 @@ class API(_BrokerAPI, ABC):
         """
         # Fetch all positions
         all_positions = self.api.list_positions()
-
+        positions = {asset: 0 for asset in assets}
         # Filter positions if a list of assets is provided
         if assets:
-            positions = {pos.symbol: pos.qty for pos in all_positions if pos.symbol in assets}
+            for pos in all_positions:
+                if pos.symbol in assets:
+                    positions[pos.symbol] = pos.qty
         else:
             positions = {pos.symbol: pos.qty for pos in all_positions}
 

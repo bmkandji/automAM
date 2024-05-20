@@ -6,13 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="ecfb871f-68a4-4833-b885-b871ed5eb1cd" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backtesting/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/backtesting/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/api_settings/api_settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/api_settings/api_settings.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/bots.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/bots.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/common.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/common.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/local_portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/local_portfolio.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/model_settings/dcc_model_coef.rds" beforeDir="false" afterPath="$PROJECT_DIR$/src/model_settings/dcc_model_coef.rds" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/pfManager.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/pfManager.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pfManger_settings/pfMananger_settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/pfManger_settings/pfMananger_settings.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/utils/check.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/check.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,26 +43,28 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.abstract.executor&quot;: &quot;Run&quot;,
-    &quot;Python.api.executor&quot;: &quot;Run&quot;,
-    &quot;Python.bots.executor&quot;: &quot;Run&quot;,
-    &quot;Python.common.executor&quot;: &quot;Run&quot;,
-    &quot;Python.main (1).executor&quot;: &quot;Run&quot;,
-    &quot;Python.main (2).executor&quot;: &quot;Run&quot;,
-    &quot;Python.main.executor&quot;: &quot;Run&quot;,
-    &quot;Python.models.executor&quot;: &quot;Run&quot;,
-    &quot;Python.portfolio.executor&quot;: &quot;Run&quot;,
-    &quot;Python.remote_portfolio.executor&quot;: &quot;Run&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/MatarKANDJI/automAM/src/pfManger_settings&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.abstract.executor": "Run",
+    "Python.api.executor": "Run",
+    "Python.bots.executor": "Run",
+    "Python.common.executor": "Run",
+    "Python.local_portfolio.executor": "Run",
+    "Python.main (1).executor": "Run",
+    "Python.main (2).executor": "Run",
+    "Python.main.executor": "Run",
+    "Python.models.executor": "Run",
+    "Python.pfManager.executor": "Run",
+    "Python.portfolio.executor": "Run",
+    "Python.remote_portfolio.executor": "Run",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "last_opened_file_path": "C:/Users/MatarKANDJI/automAM/src/pfManger_settings",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="C:\Users\MatarKANDJI\automAM\src\pfManger_settings" />

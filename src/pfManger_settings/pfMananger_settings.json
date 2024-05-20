@@ -33,7 +33,7 @@
             },
 
     "portfolio": {
-            "fixed_weights" : [[1,  1, 0, 0],[0, 0, 0, 0]],
+            "fixed_weights" : [[1,  0, 0, 0],[0, 0, 0, 0]],
             "ref_portfolios": {
                 "AAPL": {
                     "capital": null,
@@ -53,7 +53,7 @@
                 },
                 "Eq_weighted": {
                     "capital": null,
-                    "next_weights": [0.25, 0.25, 0.25, 0.25, 0.0],
+                    "next_weights": [0.0, 0.33, 0.33, 0.34],
                     "weights": null
 
                                 }
@@ -70,8 +70,8 @@
                 },
 
     "api": {
-                "api_key": "AKLV1H5N2WJ83Y5A4ESO",
-                "api_secret": "LBceJoBsEOYNHdOi6ebawoM6mJCJfkJntGWcTnSo",
+                "api_key": "AK8RR9RZLSLBG9D8UD80",
+                "api_secret": "KyZaPPJNFu6uz7bKLsofwccZwBYNAUbh9YhoFvta",
                 "base_url": "https://api.alpaca.markets",
                 "api_version": "v2",
                 "cash": "USD"

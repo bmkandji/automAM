@@ -90,7 +90,7 @@ def weighting(data: np.ndarray, scheme: str = 'uniform', **kwargs: Any) -> np.nd
     return weightsed_mean
 
 
-def get_last_trading_day(given_date: str, market: str) -> datetime:
+def get_last_trading_day(given_date: pd.Timestamp, market: str) -> datetime:
     """
     Returns the last trading day for the specified market before the given date.
 
@@ -98,15 +98,12 @@ def get_last_trading_day(given_date: str, market: str) -> datetime:
     :param market: The market identifier, e.g., 'XNYS' for New York Stock Exchange.
     :return: The last trading day as a datetime object.
     """
-    # Parse the given_date string to a pandas Timestamp object
-    given_date = pd.Timestamp(given_date)
 
     # Convert to UTC and then make it timezone naive
-    given_date = given_date.floor('D')
+    given_date = datetime(given_date.year, given_date.month, given_date.day)
 
     # Get the calendar for the specified market
     market_cal = ecals.get_calendar(market)
-
     # Get the schedule for the past month up to the given date
     one_month_ago = given_date - pd.DateOffset(months=1)
     schedule = market_cal.sessions_in_range(one_month_ago, given_date)
@@ -162,7 +159,7 @@ def market_settings_date(cal_name: str, start: datetime, end: datetime) -> List[
     # Add one hour before and after the open time to each trading day
     settings_hours = [(open_session - timedelta(hours=2),
                        open_session,
-                       open_session + timedelta(hours=1))
+                       open_session + timedelta(hours=2))
                       for open_session in open_sessions]
 
     return settings_hours
@@ -196,7 +193,7 @@ def trunc_decimal(number: float, decimals: int) -> float:
     # Créer le facteur de quantification basé sur le nombre de décimales souhaité
     factor = Decimal('1.' + '0' * decimals)
     # Quantizer le nombre à ce facteur
-    return Decimal(number).quantize(factor)
+    return float(Decimal(number).quantize(factor))
 
 
 def get_current_time():

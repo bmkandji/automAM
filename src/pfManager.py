@@ -169,12 +169,13 @@ class PortfolioManager:
         buy_orders = []
         sell_orders = []
         fee_norm = 1 / (1 - self.strategy.strat_config["fee_rate"])
+        print(current_prices)
+        print(current_positions)
+        print(target_values)
         for asset, target_value in target_values.items():
             target_qty = target_values.get(asset, 0) / current_prices[asset]
             difference = target_qty - float(current_positions.get(asset, 0))
             trad_qty = trunc_decimal(abs(difference), 8)  # Troncature à 8 décimales
-            trad_notional = trunc_decimal(abs(difference)
-                                          * current_prices[asset], 2)  # Troncature à 2 décimales
             if difference > 0:
                 # Pour acheter, on utilise la valeur notionnelle
                 buy_orders.append({"asset": asset,
@@ -189,7 +190,8 @@ class PortfolioManager:
                 sell_orders.append({"asset": asset,
                                     "action": "sell",
                                     "units": trad_qty,
-                                    "value": trad_notional,
+                                    "value": trunc_decimal(abs(difference)
+                                                           * current_prices[asset], 1),
                                     "type": "qty"})
 
         # Trier les ordres par valeur décroissante
@@ -226,7 +228,7 @@ class PortfolioManager:
             if total_buy_value > current_cash:
                 # Scale down each buy order proportionally if total buy value exceeds available cash
                 for order in self.pending_orders["buy"]:
-                    order["value"] = trunc_decimal(order["value"] * (current_cash / total_buy_value) - 0.01, 2)
+                    order["value"] = trunc_decimal(order["value"] * (current_cash / total_buy_value) - 0.01, 1)
 
                 # Remove buy orders with value less than or equal to 0.05 after adjustment
                 self.pending_orders["buy"] = [order for order in self.pending_orders["buy"] if order["value"] > 0]
@@ -284,7 +286,7 @@ class PortfolioManager:
             if to_update:
                 print("Rebalancing period")
                 if self.portfolio.date != get_last_trading_day(self.rebal_date[0][1],
-                                                               pm_config["market"]):
+                                                               pm_config["market"]) or self.to_init:
                     self.__update_portfolio(True)
 
                 self.__execute_orders()
