@@ -6,12 +6,11 @@
   <component name="ChangeListManager">
     <list default="true" id="ecfb871f-68a4-4833-b885-b871ed5eb1cd" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/abstract.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/abstract.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/api.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/api_settings/api_settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/api_settings/api_settings.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/bots.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/bots.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/common.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/common.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/data_mn.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/data_mn.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/model_settings/dcc_model_coef.rds" beforeDir="false" afterPath="$PROJECT_DIR$/src/model_settings/dcc_model_coef.rds" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/local_portfolio.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/local_portfolio.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/pfManger_settings/pfMananger_settings.json" beforeDir="false" afterPath="$PROJECT_DIR$/src/pfManger_settings/pfMananger_settings.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/utils/check.py" beforeDir="false" afterPath="$PROJECT_DIR$/utils/check.py" afterDir="false" />
     </list>

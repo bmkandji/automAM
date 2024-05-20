@@ -80,7 +80,7 @@ class API(_BrokerAPI, ABC):
         account = self.api.get_account()
         return float(account.cash)
 
-    def get_current_prices(self, assets: List[str], retries: int = 3, delay: int = 60) -> Dict[str, Dict[str, float]]:
+    def get_current_prices(self, assets: List[str], retries: int = 3, delay: int = 5) -> Dict[str, Dict[str, float]]:
         """
         Retrieves the latest current prices and their trade dates for a specified list of asset symbols using a single API call.
         Retries if not all prices are obtained.
@@ -109,7 +109,9 @@ class API(_BrokerAPI, ABC):
                 break
             if attempt < retries - 1:
                 time.sleep(delay)  # Wait before retrying
-        prices["date"] = date.astimezone(timezone.utc).tz_localize(None)
+                print(date)
+        prices["date"] = date.astimezone(timezone.utc).tz_localize(None)\
+            if date else None
         return prices
 
     def get_total_portfolio_value(self, assets: List[str] = None) -> float:
@@ -238,7 +240,7 @@ class API(_BrokerAPI, ABC):
 
         return cancellation_results
 
-"""
+'''
 ########### TEST API ##############
 from utils.load import load_json_config
 api_config = load_json_config(r"api_settings/api_settings.json")
@@ -250,5 +252,4 @@ print(alpaca_api.get_current_prices(["AAPL", "AMZN", "GOOGL"]))
 print(alpaca_api.get_total_portfolio_value(["AAPL", "AMZN", "GOOGL"]))
 #print(alpaca_api.place_orders([{"asset": "GOOGL", "units": 0.01, "action": "buy", "type": "qty"}]))
 #print(alpaca_api.cancel_all_open_orders())
-#alpaca_api.cancel_order("329b4299-d748-4670-8aa1-ec8b173de6e9")
-"""
+'''

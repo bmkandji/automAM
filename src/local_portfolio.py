@@ -79,7 +79,7 @@ class Portfolio(Position):
         }
 
         self._pf_config: Dict[str, Any] = pf_config
-        self._strategies: _Strategies = None
+        self._strategy: _Strategies = None
         self._metrics: Dict[str, Any] = {}
         self._next_weights: np.ndarray = weights
 
@@ -94,9 +94,9 @@ class Portfolio(Position):
         return self._metrics
 
     @property
-    def strategies(self) -> _Strategies:
+    def strategy(self) -> _Strategies:
         """Returns the strategy configuration applied to the portfolio."""
-        return self._strategies
+        return self._strategy
 
     @property
     def next_weights(self) -> Optional[np.ndarray]:
@@ -133,7 +133,7 @@ class Portfolio(Position):
         next_weights = strategies.fit(self)
         checks_weights(next_weights)  # Check sum to 1
         self._next_weights = next_weights
-        self._strategies = strategies  # Adjusted to handle multiple strategies
+        self._strategy = strategies  # Adjusted to handle multiple strategies
 
     def forward(self, data: _Data,
                 update_weights=True,
@@ -155,8 +155,8 @@ class Portfolio(Position):
         """
 
         check_configs(portfolio=self, data=data,
-                      check_date=False, check_scale=True,
-                      check_fit_date=False)
+                      rportfolio=rem_portfolio, check_date=False,
+                      check_scale=True, check_fit_date=False)
 
         if not (data.data_config["start_date"] <= self.date < data.data_config["end_date"]):
             raise ValueError("The data does not cover the required period for the portfolio.")
@@ -165,14 +165,12 @@ class Portfolio(Position):
         print(f"observed returns: {returns}\n")
         if rem_portfolio is not None:
 
-            check_configs(portfolio=self, rportfolio=rem_portfolio)
             capital_weights = rem_portfolio.weights()
-            observed_weights = [capital_weights["weight"][asset]
+            observed_weights = np.array([capital_weights["weights"][asset]
                                 for asset in
-                                ["cash"] + self.pf_config["symbols"]]
+                                ["cash"] + self.pf_config["symbols"]])
 
-            if not(get_last_trading_day(capital_weights["date"], self.pf_config["market"]) <
-                   data.data_config["end_date"] <= capital_weights["date"]):
+            if get_last_trading_day(capital_weights["date"], self.pf_config["market"]) != data.data_config["end_date"]:
                 raise ValueError("The date of data and remote portfolio are not coherent")
 
             checks_weights(observed_weights)
@@ -182,7 +180,7 @@ class Portfolio(Position):
 
         else:
             past_capital = pf_t.capital_fw(self.next_weights, self.weights,
-                                           self.strategies.strat_config["fee_rate"], self.capital)
+                                           self.strategy.strat_config["fee_rate"], self.capital)
 
             self._capital, self._weights = pf_t.fw_portfolio_value(self.next_weights,
                                                                    returns, past_capital,
@@ -198,7 +196,7 @@ class Portfolio(Position):
             for key in self._pf_config["ref_portfolios"]:
                 next_weights = self.pf_config["ref_portfolios"][key]["next_weights"]
                 current_weights = self.pf_config["ref_portfolios"][key]["weights"]
-                fee_rate = self.strategies.strat_config["fee_rate"]
+                fee_rate = self.strategy.strat_config["fee_rate"]
                 current_capital = self.pf_config["ref_portfolios"][key]["capital"]
 
                 past_capital_ref = pf_t.capital_fw(next_weights,
@@ -218,7 +216,7 @@ class Portfolio(Position):
         if update_weights:
             print(self.metrics)
             self.update_metrics(data)
-            strategies = self.strategies if strategies is None else strategies
+            strategies = self.strategy if strategies is None else strategies
             self.update_weights(strategies)
 
         else:

@@ -28,7 +28,7 @@ def check_configs(portfolio=None, data=None,
                 or dates among the provided configurations.
     """
     # Check if at least two configurations are provided
-    provided_configs = sum([1 for cfg in [portfolio, data, model] if cfg is not None])
+    provided_configs = sum([1 for cfg in [portfolio, data, model, rportfolio] if cfg is not None])
     if provided_configs < 2:
         raise ValueError("Configuration mismatch: Insufficient configurations provided for comparison.")
 

@@ -51,8 +51,6 @@ class PortfolioManager:
 
         # Fetch historical data
         self.data: _Data = Data(pm_config["data"])
-        self.data.fetch_data(
-            today - timedelta(days=pm_config["hist_dataLen"]), today)
 
         # Fit and forecast using the model
         self.model: _Model = Model(pm_config["model"])
@@ -67,23 +65,24 @@ class PortfolioManager:
         # Initialize local portfolio with the refreshed positions
 
         self.portfolio: Portfolio = Portfolio(
-            pm_config["portfolio"],
-            position["capital"],
-            np.array([position["weights"][asset]
-                      for asset in
-                      ["cash"] + self.rportfolio.pf_config["symbols"]]),
-            get_last_trading_day(position["date"], pm_config["market"]))
+            pf_config=pm_config["portfolio"],
+            capital=position["capital"],
+            weights=np.array([position["weights"][asset]
+                              for asset in
+                              ["cash"] + self.rportfolio.pf_config["symbols"]]),
+            date=get_last_trading_day(position["date"], pm_config["market"]))
+
         # Initialize pending orders list
         self.pending_orders: Dict[str, List[Dict[str, Union[str, float]]]] = {}
-        self.pm_manager: str = pm_config["pm_manger"]
-        self.calib_done: bool = False
+        self.pm_manager_path: str = pm_config["pm_manger"]
+        self.to_init: bool = True
 
     def __save_state(self):
         """
-        Private method to save the state of the current object to a file specified in self.pm_manager.
+        Private method to save the state of the current object to a file specified in self.pm_manager_path.
         """
         try:
-            with open(self.pm_manager, 'wb') as f:
+            with open(self.pm_manager_path, 'wb') as f:
                 pickle.dump(self, f)
             print("State saved successfully.")
         except (IOError, pickle.PickleError) as e:
@@ -91,45 +90,60 @@ class PortfolioManager:
 
     def __load_state(self):
         """
-        Private method to load the state of the current object from a file specified in self.pm_manager.
+        Private method to load the state of the current object from a file specified in self.pm_manager_path.
         This method updates the current object's attributes with the loaded state.
         """
         try:
-            with open(self.pm_manager, 'rb') as f:
+            with open(self.pm_manager_path, 'rb') as f:
                 loaded_object = pickle.load(f)
             self.__dict__.update(loaded_object.__dict__)
             print("State loaded successfully.")
         except (IOError, pickle.PickleError) as e:
             print(f"Failed to load state: {e}")
 
-    def update_portfolio(self, to_calib: bool = False):
+    def __init_update(self):
+        today = get_current_time()
+        self.data.fetch_data(
+            today - timedelta(days=pm_config["hist_dataLen"]), today)
+        self.model.fit_fcast(self.data,
+                             self.data.data_config["end_date"] +
+                             timedelta(days=self.data.data_config["horizon"]))
+        self.portfolio.update_metrics(self.data)
+        self.portfolio.update_weights(self.strategy)
+
+    def __update_portfolio(self, to_calib: bool = False):
         """
         Updates the portfolio weights with the complete logic to manage existing orders and place new orders.
 
         """
 
-        max_attempts = 5
-        attempts = 0
+        if self.to_init:
+            self.__init_update()
+            self.to_init = False
 
-        while self.rportfolio.open_orders and attempts < max_attempts:
-            time.sleep(60)
-            self.rportfolio.refresh_portfolio()
-            attempts += 1
+        else:
+            max_attempts = 5
+            attempts = 0
 
-        if self.rportfolio.open_orders:
-            raise ValueError("Failed to refresh portfolio: open orders still present after 5 attempts.")
+            while self.rportfolio.open_orders and attempts < max_attempts:
+                time.sleep(60)
+                self.rportfolio.refresh_portfolio()
+                attempts += 1
 
-        self.data.update_data()
+            if self.rportfolio.open_orders:
+                raise ValueError("Failed to refresh portfolio: open orders still present after 5 attempts.")
 
-        self.model.fit_fcast(self.data,
-                             self.data.data_config["end_date"] +
-                             timedelta(days=self.data.data_config["horizon"]))
+            self.data.update_data()
 
-        self.portfolio.forward(self.data,
-                               to_calib,
-                               self.strategy,
-                               self.rportfolio,
-                               update_ref_pf=True)
+            self.model.fit_fcast(self.data,
+                                 self.data.data_config["end_date"] +
+                                 timedelta(days=self.data.data_config["horizon"]))
+
+            self.portfolio.forward(self.data,
+                                   to_calib,
+                                   self.strategy,
+                                   self.rportfolio,
+                                   update_ref_pf=True)
 
         capital_weights = self.rportfolio.weights()
         weights = np.array([capital_weights["weights"][asset]
@@ -166,9 +180,11 @@ class PortfolioManager:
                 buy_orders.append({"asset": asset,
                                    "action": "buy",
                                    "units": trad_qty,
-                                   "value": trunc_decimal(fee_norm * trad_notional, 1),
+                                   "value": trunc_decimal(fee_norm * abs(difference)
+                                                          * current_prices[asset], 1),
                                    "type": "notional"})
-            elif difference < 0 and trad_qty < current_positions.get(asset, 0):
+
+            elif difference < 0 and trad_qty < float(current_positions.get(asset, 0)):
                 # Pour vendre, on utilise les unités
                 sell_orders.append({"asset": asset,
                                     "action": "sell",
@@ -182,7 +198,7 @@ class PortfolioManager:
 
         self.pending_orders = {"sell": sell_orders, "buy": buy_orders}
 
-    def execute_orders(self):
+    def __execute_orders(self):
         """
         Execute pending orders in order of their value and remove them from the list if successful.
 
@@ -250,14 +266,14 @@ class PortfolioManager:
         - If rebalancing is needed, execute orders and update the portfolio if necessary.
         - Sleep until the next significant event (calibration or rebalancing).
         """
-        self.__load_state()
+
+        calib_done = False
         while self.rebal_date:
             to_calib, to_update, self.rebal_date = Check_and_update_Date(self.rebal_date)
-
-            if to_calib and not self.calib_done:
+            if to_calib and not calib_done:
                 print("Calibration period")
-                self.update_portfolio(to_calib)
-                self.calib_done = True
+                self.__update_portfolio(to_calib)
+                calib_done = True
                 self.__save_state()
                 now = get_current_time()
                 to_sleep = max((self.rebal_date[0][1] - now).total_seconds(), 0)
@@ -269,25 +285,23 @@ class PortfolioManager:
                 print("Rebalancing period")
                 if self.portfolio.date != get_last_trading_day(self.rebal_date[0][1],
                                                                pm_config["market"]):
-                    self.update_portfolio(True)
+                    self.__update_portfolio(True)
 
-                self.execute_orders()
+                self.__execute_orders()
                 if not self.pending_orders["buy"] and not self.pending_orders["sell"]:
                     now = get_current_time()
                     to_sleep = max((self.rebal_date[1][0] - now).total_seconds(), 0)
                     print(f"Sleeping for {to_sleep} seconds after rebalancing")
                     time.sleep(to_sleep)
-                self.calib_done = False
+                calib_done = False
                 continue
 
             else:
-                print("Non-rebalancing period")
-                self.calib_done = False
+                print("Non-Calibrage-Or-rebalancing period")
                 now = get_current_time()
-                to_sleep = max((self.rebal_date[1][0] - now).total_seconds(), 0)
+                to_sleep = max((self.rebal_date[0][0] - now).total_seconds(), 0)
                 print(f"Sleeping for {to_sleep} seconds during non-rebalancing period")
                 time.sleep(to_sleep)
-
 
             # Add a sleep period to avoid a too-fast infinite loop
             time.sleep(30)
