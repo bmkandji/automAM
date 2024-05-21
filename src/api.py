@@ -3,7 +3,6 @@ from abc import ABC
 from typing import List, Dict, Union
 from src.abstract import _BrokerAPI
 import time
-from datetime import timezone
 
 
 class API(_BrokerAPI, ABC):
@@ -111,8 +110,7 @@ class API(_BrokerAPI, ABC):
                 break
             if attempt < retries - 1:
                 time.sleep(delay)  # Wait before retrying
-                print(date)
-        prices["date"] = date.astimezone(timezone.utc).tz_localize(None)\
+        prices["date"] = date.tz_convert('UTC').tz_localize(None)\
             if date else None
         return prices
 

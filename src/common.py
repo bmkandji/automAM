@@ -116,9 +116,9 @@ def get_last_trading_day(given_date: pd.Timestamp, market: str) -> datetime:
     last_trading_day = schedule[schedule <= given_date][-1]
 
     # Convert the last trading day to UTC
-    last_trading_day = pd.Timestamp(last_trading_day).tz_localize('UTC')
+    last_trading_day = pd.Timestamp(last_trading_day).tz_localize('UTC').tz_localize(None)
 
-    return last_trading_day.to_pydatetime()
+    return last_trading_day
 
 
 def market_settings_date(cal_name: str, start: datetime, end: datetime) -> List[Tuple[datetime, datetime, datetime]]:
