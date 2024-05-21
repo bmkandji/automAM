@@ -30,7 +30,8 @@ class PortfolioManager:
         pm_config = pm_settings.copy()
         # Update configuration with symbols and market information
         pm_config["data"].update({"symbols": pm_config["symbols"],
-                                  "horizon": pm_config["horizon"]})
+                                  "horizon": pm_config["horizon"],
+                                  "api_config": pm_config["api"]})
 
         pm_config["model"].update({"symbols": pm_config["symbols"]})
 

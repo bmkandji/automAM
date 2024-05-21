@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from src.data_mn import Data
+from src.data_mn import Data, AlpacaData
 from src.strategies import Strategies
 from src.models import Model
 from src.local_portfolio import Portfolio
@@ -21,13 +21,13 @@ def load_configs():
     data_config = load_json_config(r'src/data_settings/data_settings.json')
     model_config = load_json_config(r'src/model_settings/model_settings.json')
     pf_config = load_json_config(r'src/portfolio_settings/pf_settings.json')
-    strat_config = load_json_config('src/strat_settings/strat_settings.json')["mean_var"]
+    strat_config = load_json_config('src/strat_settings/strat_settings.json')["tracking_error"]
     return data_config, model_config, pf_config, strat_config
 
 
 # Initialize data, model, portfolio, and strategy
 def initialize_components(data_config, model_config, pf_config, strat_config):
-    data = Data(data_config)
+    data = AlpacaData(data_config)
     data.fetch_data(pd.Timestamp(year=2005, month=1, day=1).tz_localize('UTC'),
                     pd.Timestamp(year=2018, month=1, day=3).tz_localize('UTC'))
     model = Model(model_config)

@@ -1,6 +1,10 @@
 {
     "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"],
-    "fixed_weights" : [[1,  1, 0, 0, 1],[0, 0, 0, 0, 0]],
+    "fixed_weights" : {
+        "index_And_weights": [[1,  1, 0, 0, 1],[0, 0, 0, 0, 0]],
+        "minmax_cash": [0, 1000],
+        "target_cash_weights":  0.05},
+
     "market": "XNYS",
     "ref_portfolios": {
         "AAPL": {

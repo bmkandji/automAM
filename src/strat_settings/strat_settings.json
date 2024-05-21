@@ -12,10 +12,10 @@
             "fee_rate": 0.0,
             "bounds": [0, null]
         },
-    "traking_error" :         {
-            "strategy": "traking_error",
+    "tracking_error" :         {
+            "strategy": "tracking_error",
             "tol": 1,
-            "ref_assert": "^GSPC",
+            "ref_asset": "Eq_weighted",
             "fee_rate": 0.0,
             "bounds": [0, null]
         },

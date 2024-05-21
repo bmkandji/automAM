@@ -37,7 +37,7 @@ class Data(_Data):
                 stock_data = yf.download(symbol, start=start_date, end=end_date)
                 # Create a temporary DataFrame to store the close prices
                 temp_data = pd.DataFrame({
-                    'Date': stock_data.index.tz_localize(timezone.utc),
+                    'Date': stock_data.index.tz_localize('UTC').tz_localize(None),
                     'Close': stock_data['Adj Close'],  # Use 'Adj Close' for adjusted closing prices
                     'Symbol': symbol
                 })
@@ -116,7 +116,7 @@ class AlpacaData(_Data):
             new_data.set_index('Date', inplace=True)
             new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close')[self.data_config["symbols"]], self._data_config["scale"])
             initial_data_length = len(self._data)
-            new_data.index = pd.to_datetime(new_data.index)
+            new_data.index = pd.to_datetime(new_data.index).tz_localize('UTC').tz_localize(None)
             self._data = pd.concat([self._data, new_data]).drop_duplicates()
             self.replace_NA()
             self._data_config["end_date"] = self._data.index.max()

@@ -32,11 +32,12 @@ class Strategies(_Strategies):
         This method selects the optimization algorithm based on the specified strategy ('mean_var',
          'max_return', or 'tracking_error') and calculates the optimal new weights for the portfolio.
         """
+
         if self.strat_config["strategy"] == "mean_var":
             arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
                    self.strat_config["aversion"], self.strat_config["fee_rate"],
                    self.strat_config["bounds"], portfolio.weights, portfolio.capital,
-                   portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]),
+                   portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]["index_And_weights"]),
                    False, False]
             return mean_variance_portfolio(*arg)
 
@@ -44,7 +45,7 @@ class Strategies(_Strategies):
             arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
                    self.strat_config["max_vol"], self.strat_config["fee_rate"],
                    self.strat_config["bounds"], portfolio.weights, portfolio.capital,
-                   portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]),
+                   portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]["index_And_weights"]),
                    False, False]
             return max_return(*arg)
 
@@ -53,7 +54,7 @@ class Strategies(_Strategies):
                    portfolio.pf_config["ref_portfolios"][self.strat_config["ref_asset"]],
                    self.strat_config["tol"], self.strat_config["fee_rate"],
                    self.strat_config["bounds"], portfolio.weights, portfolio.capital,
-                   portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]),
+                   portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]["index_And_weights"]),
                    False, False]
             return tracking_error(*arg)
 

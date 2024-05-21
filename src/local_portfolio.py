@@ -214,7 +214,15 @@ class Portfolio(Position):
             raise ValueError("The references portfolios are note updated since many period.")
 
         if update_weights:
-            print(self.metrics)
+            if self.capital > self.pf_config["fixed_weights"]["minmax_cash"][0]:
+                self.pf_config["fixed_weights"]["index_And_weights"][1][0] \
+                    = min(
+                    max(self.pf_config["fixed_weights"]["minmax_cash"][0]/self.capital,
+                        self.pf_config["fixed_weights"]["target_cash_weights"]),
+                    self.pf_config["fixed_weights"]["minmax_cash"][1]/self.capital)
+            else:
+                raise ValueError("Insufficient capital for investment.")
+
             self.update_metrics(data)
             strategies = self.strategy if strategies is None else strategies
             self.update_weights(strategies)
