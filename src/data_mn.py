@@ -4,7 +4,6 @@ from src.abstract import _Data
 import alpaca_trade_api as tradeapi
 import pandas as pd
 from datetime import datetime, timedelta
-import requests
 
 
 class Data(_Data):
