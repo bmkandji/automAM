@@ -93,7 +93,7 @@ class API(_BrokerAPI, ABC):
         :return: A dictionary with a date key and a dictionary of asset prices.
         """
         prices = {asset: None for asset in assets}
-        date = None
+        set_date = False
 
         for attempt in range(retries):
             for asset in assets:
@@ -102,7 +102,7 @@ class API(_BrokerAPI, ABC):
                         trade = self.api.get_latest_trade(asset)
                         if trade:
                             prices[asset] = trade.price
-                            date = trade.timestamp  # Update date to the latest trade timestamp
+                            set_date = True  # Update date to the latest trade timestamp
                     except Exception:
                         pass  # Ignore exceptions and retry
 
@@ -111,8 +111,7 @@ class API(_BrokerAPI, ABC):
                 break
             if attempt < retries - 1:
                 time.sleep(delay)  # Wait before retrying
-        prices["date"] = get_current_time()
-        print(prices["date"])
+        prices["date"] = get_current_time() if set_date else None
         return prices
 
     def get_total_portfolio_value(self, assets: List[str] = None) -> float:
