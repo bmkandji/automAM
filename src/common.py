@@ -98,7 +98,6 @@ def get_last_trading_day(given_date: pd.Timestamp, market: str) -> datetime:
     :param market: The market identifier, e.g., 'XNYS' for New York Stock Exchange.
     :return: The last trading day as a datetime object.
     """
-
     # Convert to UTC and then make it timezone naive
     given_date = datetime(given_date.year, given_date.month, given_date.day)
 
@@ -113,7 +112,7 @@ def get_last_trading_day(given_date: pd.Timestamp, market: str) -> datetime:
         raise ValueError("No trading days found in the past month up to the given date.")
 
     # Find the last trading day before the given date
-    last_trading_day = schedule[schedule <= given_date][-1]
+    last_trading_day = schedule[schedule < given_date][-1]
 
     # Convert the last trading day to UTC
     last_trading_day = pd.Timestamp(last_trading_day).tz_localize('UTC').tz_localize(None)
@@ -157,9 +156,9 @@ def market_settings_date(cal_name: str, start: datetime, end: datetime) -> List[
         current_date += timedelta(days=1)
 
     # Add one hour before and after the open time to each trading day
-    settings_hours = [(open_session - timedelta(hours=2),
+    settings_hours = [(open_session - timedelta(hours=10),
                        open_session,
-                       open_session + timedelta(hours=2))
+                       open_session + timedelta(hours=10))
                       for open_session in open_sessions]
 
     return settings_hours

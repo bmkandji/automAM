@@ -63,7 +63,7 @@ class RemotePortfolio:
         # Fetch all open orders
         open_orders = self.open_orders
         sell_open_orders = [order for order in open_orders if order.side == 'sell']
-        buy_open_order = [order for order in open_orders if order.side == 'sell']
+        buy_open_order = [order for order in open_orders if order.side == 'buy']
 
         return {"sell_open_orders": sell_open_orders, "buy_open_order": buy_open_order}
 

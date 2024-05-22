@@ -78,7 +78,7 @@ class PortfolioManager:
         self.pm_manager_path: str = pm_config["pm_manger"]
         self.to_init: bool = True
 
-    def __save_state(self):
+    def __save_state(self, date=None):
         """
         Private method to save the state of the current object to a file specified in self.pm_manager_path.
         """
@@ -281,7 +281,7 @@ class PortfolioManager:
                 self.__save_state()
                 now = get_current_time()
                 to_sleep = max((self.rebal_date[0][1] - now).total_seconds(), 0)
-                print(f"Sleeping for {to_sleep} seconds during calibration period")
+                print(f"Sleeping for {to_sleep} seconds after calibration period")
                 time.sleep(to_sleep)
                 continue
 
@@ -289,6 +289,7 @@ class PortfolioManager:
                 print("Rebalancing period")
                 if self.portfolio.date != get_last_trading_day(self.rebal_date[0][1],
                                                                pm_config["market"]) or self.to_init:
+                    print("Calibration has not been done, Calibration...")
                     self.__update_portfolio(True)
 
                 self.__execute_orders()

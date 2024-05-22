@@ -50,8 +50,8 @@ def check_configs(portfolio=None, data=None,
         model_date = model.metrics.get("fit_date") if model else None
         # Collect non-None dates
         dates = [d for d in [portfolio_date, data_date, model_date] if d is not None]
-        # Check if all provided dates are the same
 
+        # Check if all provided dates are the same
         if len(set(dates)) > 1 or len(dates) < 2:
             raise ValueError("Configuration mismatch: dates do not align among provided configurations.")
 

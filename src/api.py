@@ -3,6 +3,7 @@ from abc import ABC
 from typing import List, Dict, Union
 from src.abstract import _BrokerAPI
 import time
+from common import get_current_time
 
 
 class API(_BrokerAPI, ABC):
@@ -110,8 +111,8 @@ class API(_BrokerAPI, ABC):
                 break
             if attempt < retries - 1:
                 time.sleep(delay)  # Wait before retrying
-        prices["date"] = date.tz_convert('UTC').tz_localize(None)\
-            if date else None
+        prices["date"] = get_current_time()
+        print(prices["date"])
         return prices
 
     def get_total_portfolio_value(self, assets: List[str] = None) -> float:

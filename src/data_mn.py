@@ -34,7 +34,7 @@ class Data(_Data):
         for symbol in self.data_config["symbols"]:
             try:
                 # Fetch stock data from Yahoo Finance
-                stock_data = yf.download(symbol, start=start_date, end=end_date)
+                stock_data = yf.download(symbol, start=start_date, end=end_date - timedelta(days=1))
                 # Create a temporary DataFrame to store the close prices
                 temp_data = pd.DataFrame({
                     'Date': stock_data.index.tz_localize('UTC').tz_localize(None),
@@ -48,7 +48,9 @@ class Data(_Data):
         # Remove duplicates and reset index
         if not new_data.empty:
             new_data.set_index('Date', inplace=True)
-            new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close')[self.data_config["symbols"]], self._data_config["scale"])
+            new_data = compute_log_returns(
+                new_data.pivot(columns='Symbol', values='Close')[self.data_config["symbols"]],
+                self._data_config["scale"])
             initial_data_length = len(self._data)
             self._data = pd.concat([self._data, new_data]).drop_duplicates()
             self.replace_NA()
@@ -91,7 +93,7 @@ class AlpacaData(_Data):
         new_data = pd.DataFrame()
 
         # Adjust end_date to be inclusive and format dates
-        formatted_start_date = (start_date-timedelta(days=1)).strftime('%Y-%m-%d')
+        formatted_start_date = (start_date - timedelta(days=1)).strftime('%Y-%m-%d')
         formatted_end_date = end_date.strftime('%Y-%m-%d')
 
         for symbol in self.data_config["symbols"]:
@@ -114,7 +116,9 @@ class AlpacaData(_Data):
 
         if not new_data.empty:
             new_data.set_index('Date', inplace=True)
-            new_data = compute_log_returns(new_data.pivot(columns='Symbol', values='Close')[self.data_config["symbols"]], self._data_config["scale"])
+            new_data = compute_log_returns(
+                new_data.pivot(columns='Symbol', values='Close')[self.data_config["symbols"]],
+                self._data_config["scale"])
             initial_data_length = len(self._data)
             new_data.index = pd.to_datetime(new_data.index).tz_localize('UTC').tz_localize(None)
             self._data = pd.concat([self._data, new_data]).drop_duplicates()
