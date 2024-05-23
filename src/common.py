@@ -217,3 +217,68 @@ def get_current_time():
         # Gestion des erreurs
         print(f"Erreur lors de la récupération de l'heure UTC : {response.status_code}")
         return None
+
+
+####################################################################################
+####################################################################################
+################################# LSTM tools #######################################
+####################################################################################
+####################################################################################
+
+
+def add_rolling_means(returns, window):
+    column_names = []
+    for column in returns.columns:
+        rolling_mean_col = returns[column].rolling(window=window).mean()
+        column_name = f"{column}_rolling_mean_{window}"
+        returns[column_name] = rolling_mean_col
+        column_names.append(column_name)
+    return returns, column_names
+
+
+def shift_and_trim(returns, columns, shift_steps):
+    # Décaler les colonnes spécifiées
+    returns[columns] = returns[columns].shift(shift_steps)
+
+    # Supprimer les lignes avec des valeurs manquantes
+    returns = returns.dropna()
+
+    return returns
+
+
+def add_upper_triangle(rends, columns):
+    returns = rends.copy()
+    n = len(columns)
+    for i in range(n):
+        for j in range(i, n):
+            col_name = f'{columns[i]}_x_{columns[j]}'
+            # Explicitly use .loc to avoid SettingWithCopyWarning
+            returns.loc[:, col_name] = returns.loc[:, columns[i]] * returns.loc[:, columns[j]]
+    return returns
+
+
+def reconstruct_matrix(vector):
+    # Calculer la taille de la matrice
+    n = int((-1 + (1 + 8 * len(vector))**0.5) / 2)
+    matrix = np.zeros((n, n))
+    index = 0
+    for i in range(n):
+        for j in range(i, n):
+            matrix[i, j] = vector[index]
+            if i != j:
+                matrix[j, i] = vector[index]
+            index += 1
+    return matrix
+
+
+def create_sequences(X, y, time_steps=1):
+    Xs, ys = [], []
+    for i in range(len(X) - time_steps):
+        Xs.append(X[(i+1):(i + time_steps + 1)])
+        ys.append(y[i + time_steps])
+    return np.array(Xs), np.array(ys)
+
+
+def sequence_for_predict(X, time_steps=1):
+    result = X[(len(X) - time_steps):len(X)]
+    return result

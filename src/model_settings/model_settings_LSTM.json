@@ -1,0 +1,10 @@
+{
+    "symbols": ["AAPL", "GOOGL", "MSFT", "^GSPC"],
+
+    "model_config": {
+        "model_path": [
+            "C:/Users/MatarKANDJI/automAM/src/model_settings/model.keras",
+            "C:/Users/MatarKANDJI/automAM/src/model_settings/scaler_X.pkl",
+            "C:/Users/MatarKANDJI/automAM/src/model_settings/scaler_y.pkl"]
+    }
+}

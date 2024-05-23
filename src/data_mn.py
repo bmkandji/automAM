@@ -34,7 +34,7 @@ class Data(_Data):
         for symbol in self.data_config["symbols"]:
             try:
                 # Fetch stock data from Yahoo Finance
-                stock_data = yf.download(symbol, start=start_date, end=end_date - timedelta(days=1))
+                stock_data = yf.download(symbol, start=start_date, end=end_date-timedelta(hours=12))
                 # Create a temporary DataFrame to store the close prices
                 temp_data = pd.DataFrame({
                     'Date': stock_data.index.tz_localize('UTC').tz_localize(None),

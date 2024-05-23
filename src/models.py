@@ -9,6 +9,17 @@ from src.common import weighting
 from datetime import datetime
 from src.abstract import _Model
 
+import src.common as cm
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import LSTM, Dense, Input
+from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping
+import pandas as pd
+from utils.load import load_MLmodel, save_MLmodel
+
 
 class Model(_Model):
     def __init__(self, model_config: dict):
@@ -116,7 +127,6 @@ class Model(_Model):
             ''')
 
     def fit_fcast(self, data: Data, horizon: datetime):
-
         """
         Perform forecasting using the defined DCC GARCH model.
 
@@ -183,3 +193,158 @@ class Model(_Model):
         # to take out of the if/else, if 2 model or plus
         self._metrics = metrics
         data.update_metrics(self)
+
+
+class Lstm_Model(_Model):
+    def __init__(self, model_config: dict):
+        """
+        Initialize the DCC GARCH Model with necessary data and configurations.
+
+        Parameters:
+        data (Data): The stock data manager containing market data.
+        model_config (str): Path to the model configuration file.
+
+        This method sets up the class by storing the stock data and model info,
+        initializing the forecast to None, setting up the R environment,
+        and defining necessary R functions for DCC GARCH analysis.
+        """
+
+        # Load the JSON configuration for the model using a utility function.
+        # This configuration contains paths, model specifications, and other necessary configs.
+        super().__init__(model_config)
+
+    def fit_fcast(self, data: Data, horizon: datetime):
+        """
+        Perform forecasting using the defined DCC GARCH model.
+
+        Parameters:
+        n_ahead (int): The number of periods ahead for which to forecast.
+
+        Returns:
+        dict: A dictionary containing the forecast results, including means and covariances.
+
+        This method activates the interface between pandas and R, converts stock data to an R-compatible format,
+        checks model availability, and executes the R forecasting function. The results are stored and returned.
+        """
+
+        # Data prep
+        self.check_fit(data, horizon)
+        model_available = os.path.exists(self._model_config["model_config"]["model_path"][0])
+        brut_data = data._data.reset_index(drop=True)
+        window_size = (horizon - data.data_config["end_date"]).days
+
+        _returns, columns = cm.add_rolling_means(brut_data, window_size)
+        shift_steps = -window_size
+        returns = cm.shift_and_trim(_returns, columns, shift_steps)
+        returns = cm.add_upper_triangle(returns, columns)
+
+        y = returns.drop(data.data_config["symbols"], axis=1).values
+        X = returns[data.data_config["symbols"]].values
+
+        no_fit = model_available and not self.metrics["to_update"]
+        model, scaler_X, scaler_y = None, None, None
+        time_steps = 10
+        # MODEL
+        if no_fit:
+            model, scaler_X, scaler_y = load_MLmodel(*self._model_config["model_config"]["model_path"])
+
+            X_scaled = scaler_X.fit_transform(X)
+            y_scaled = scaler_y.fit_transform(y)
+            X_train, y_train = cm.create_sequences(X_scaled, y_scaled, time_steps)
+
+            model.compile(optimizer='adam', loss='mean_squared_error')
+            # ajustement du modèle avec les nouvelles données
+            model.fit(X_train, y_train,
+                      epochs=1, batch_size=20,
+                      validation_split=0.2,
+                      verbose=1)
+
+        if not (model and scaler_X and scaler_y):
+            scaler_X = MinMaxScaler(feature_range=(0, 1))
+            scaler_y = MinMaxScaler(feature_range=(0, 1))
+            X_scaled = scaler_X.fit_transform(X)
+            y_scaled = scaler_y.fit_transform(y)
+            X_train, y_train = cm.create_sequences(X_scaled, y_scaled, time_steps)
+
+            # Defining the LSTM model with an Input layer
+            model = Sequential([
+                Input(shape=(X_train.shape[1], X_train.shape[2])),
+                LSTM(50, activation='relu'),
+                Dense(y_train.shape[1])
+            ])
+
+            model.compile(optimizer='adam', loss='mean_squared_error')
+            # Callback pour l'arrêt anticipé
+            early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
+
+            # Entraînement du modèle
+            model.fit(X_train, y_train,
+                      epochs=200, batch_size=20,
+                      validation_split=0.2,
+                      callbacks=[early_stopping],
+                      verbose=1)
+
+            save_MLmodel(model, scaler_X, scaler_y, *self._model_config["model_config"]["model_path"])
+
+        new_X = cm.sequence_for_predict(data.data[data.data_config["symbols"]].values, time_steps)
+        new_X_scaled = scaler_X.transform(new_X)
+
+        # Ajouter une dimension pour correspondre à l'entrée attendue par le modèle LSTM (échantillon, time_steps,
+        # features)
+        new_X_scaled = np.expand_dims(new_X_scaled, axis=1)
+
+        # Faire la prédiction avec le modèle
+        new_y_scaled = model.predict(new_X_scaled)
+
+        # Inverser la transformation pour revenir à l'échelle d'origine
+        new_y = scaler_y.inverse_transform(new_y_scaled).flatten()
+        print(new_y)
+        nb_asset = len(data.data_config["symbols"])
+        mean = new_y[:nb_asset]
+        covariance = cm.reconstruct_matrix(new_y[nb_asset:])
+        _, value = next(iter(data.data_config["cash"].items()))
+        mean = np.insert(mean, 0, value)
+        covariance = np.insert(np.insert(covariance, 0, 0, axis=1), 0, 0, axis=0)
+
+        metrics = {
+            "fit_date": data.data_config["end_date"],
+            "horizon": horizon,
+            "scale": data.data_config["scale"],
+            "mean": mean,
+            "covariance": covariance,
+            "to_update": True
+        }
+        #print(metrics)
+        # to take out of the if/else, if 2 model or plus
+        self._metrics = metrics
+        data.update_metrics(self)
+
+
+
+"""
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from src.data_mn import Data, Data
+from src.strategies import Strategies
+from src.models import Model
+from src.local_portfolio import Portfolio
+from utils.load import load_json_config
+from datetime import timedelta, datetime
+import copy
+import exchange_calendars as ecals
+import matplotlib.dates as mdates
+from configs.root_config import set_project_root
+
+# Configure the path to the project root
+set_project_root()
+
+data_config = load_json_config(r'src/data_settings/data_settings.json')
+model_config = load_json_config(r'src/model_settings/model_settings_LSTM.json')
+data = Data(data_config)
+data.fetch_data(pd.Timestamp(year=2005, month=1, day=1).tz_localize('UTC').tz_localize(None),
+                pd.Timestamp(year=2018, month=1, day=3).tz_localize('UTC').tz_localize(None))
+model = Lstm_Model(model_config)
+horizon = pd.Timestamp(year=2018, month=1, day=10).tz_localize('UTC').tz_localize(None)
+model.fit_fcast(data, horizon)
+"""
