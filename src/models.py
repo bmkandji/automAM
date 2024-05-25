@@ -1,24 +1,25 @@
-import numpy as np
 import os
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.vectors import ListVector
-from src.data_mn import Data
 from configs.rpy2_setup import setup_environment
 from src.common import weighting
-from datetime import datetime
 from src.abstract import _Model
-
 import src.common as cm
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_squared_error
+from src.data_mn import Data
+from utils.load import load_json_config
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
-from keras.layers import LSTM, Dense, Input
-from keras.optimizers import Adam
+from keras.layers import LSTM, Dense, Dropout, Input
 from keras.callbacks import EarlyStopping
-import pandas as pd
 from utils.load import load_MLmodel, save_MLmodel
+import numpy as np
+import pandas as pd
+from datetime import datetime
+from configs.root_config import set_project_root
+
+# Configure the path to the project root
+set_project_root()
 
 
 class Model(_Model):
@@ -181,7 +182,8 @@ class Model(_Model):
         _, value = next(iter(data.data_config["cash"].items()))
         mean = np.insert(mean, 0, value)
         covariance = np.insert(np.insert(covariance, 0, 0, axis=1), 0, 0, axis=0)
-
+        print(mean)
+        print(covariance)
         metrics = {
             "fit_date": data.data_config["end_date"],
             "horizon": horizon,
@@ -243,7 +245,7 @@ class Lstm_Model(_Model):
 
         no_fit = model_available and not self.metrics["to_update"]
         model, scaler_X, scaler_y = None, None, None
-        time_steps = 10
+        time_steps = 1
         # MODEL
         if no_fit:
             model, scaler_X, scaler_y = load_MLmodel(*self._model_config["model_config"]["model_path"])
@@ -254,10 +256,10 @@ class Lstm_Model(_Model):
 
             model.compile(optimizer='adam', loss='mean_squared_error')
             # ajustement du modèle avec les nouvelles données
-            model.fit(X_train, y_train,
-                      epochs=1, batch_size=20,
-                      validation_split=0.2,
-                      verbose=1)
+            #model.fit(X_train, y_train,
+             #         epochs=1, batch_size=20,
+             #         validation_split=0.2,
+             #         verbose=1)
 
         if not (model and scaler_X and scaler_y):
             scaler_X = MinMaxScaler(feature_range=(0, 1))
@@ -265,21 +267,29 @@ class Lstm_Model(_Model):
             X_scaled = scaler_X.fit_transform(X)
             y_scaled = scaler_y.fit_transform(y)
             X_train, y_train = cm.create_sequences(X_scaled, y_scaled, time_steps)
-
             # Defining the LSTM model with an Input layer
             model = Sequential([
                 Input(shape=(X_train.shape[1], X_train.shape[2])),
-                LSTM(50, activation='relu'),
+                LSTM(128, activation='relu', return_sequences=True),
+                Dropout(0.3),
+                LSTM(128, activation='relu', return_sequences=True),
+                Dropout(0.3),
+                LSTM(64, activation='relu', return_sequences=True),
+                Dropout(0.3),
+                LSTM(64, activation='relu'),
+                Dropout(0.3),
+                Dense(64, activation='relu'),
+                Dense(32, activation='relu'),
                 Dense(y_train.shape[1])
             ])
 
             model.compile(optimizer='adam', loss='mean_squared_error')
-            # Callback pour l'arrêt anticipé
+
             early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
             # Entraînement du modèle
             model.fit(X_train, y_train,
-                      epochs=200, batch_size=20,
+                      epochs=300, batch_size=32,
                       validation_split=0.2,
                       callbacks=[early_stopping],
                       verbose=1)
@@ -287,21 +297,25 @@ class Lstm_Model(_Model):
             save_MLmodel(model, scaler_X, scaler_y, *self._model_config["model_config"]["model_path"])
 
         new_X = cm.sequence_for_predict(data.data[data.data_config["symbols"]].values, time_steps)
+
         new_X_scaled = scaler_X.transform(new_X)
 
         # Ajouter une dimension pour correspondre à l'entrée attendue par le modèle LSTM (échantillon, time_steps,
         # features)
-        new_X_scaled = np.expand_dims(new_X_scaled, axis=1)
+        new_X_scaled = np.expand_dims(new_X_scaled, axis=0)
 
         # Faire la prédiction avec le modèle
         new_y_scaled = model.predict(new_X_scaled)
 
         # Inverser la transformation pour revenir à l'échelle d'origine
         new_y = scaler_y.inverse_transform(new_y_scaled).flatten()
-        print(new_y)
+
         nb_asset = len(data.data_config["symbols"])
-        mean = new_y[:nb_asset]
-        covariance = cm.reconstruct_matrix(new_y[nb_asset:])
+        mean = np.array(new_y[:nb_asset])
+        mean_matrix = mean.reshape(-1, 1)
+        covariance = np.array(cm.reconstruct_matrix(new_y[nb_asset:])) - np.dot(mean_matrix, mean_matrix.T)
+        print(mean)
+        print(covariance)
         _, value = next(iter(data.data_config["cash"].items()))
         mean = np.insert(mean, 0, value)
         covariance = np.insert(np.insert(covariance, 0, 0, axis=1), 0, 0, axis=0)
@@ -320,31 +334,14 @@ class Lstm_Model(_Model):
         data.update_metrics(self)
 
 
-
-"""
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from src.data_mn import Data, Data
-from src.strategies import Strategies
-from src.models import Model
-from src.local_portfolio import Portfolio
-from utils.load import load_json_config
-from datetime import timedelta, datetime
-import copy
-import exchange_calendars as ecals
-import matplotlib.dates as mdates
-from configs.root_config import set_project_root
-
-# Configure the path to the project root
-set_project_root()
-
 data_config = load_json_config(r'src/data_settings/data_settings.json')
 model_config = load_json_config(r'src/model_settings/model_settings_LSTM.json')
+model_config2 = load_json_config(r'src/model_settings/model_settings.json')
 data = Data(data_config)
 data.fetch_data(pd.Timestamp(year=2005, month=1, day=1).tz_localize('UTC').tz_localize(None),
                 pd.Timestamp(year=2018, month=1, day=3).tz_localize('UTC').tz_localize(None))
 model = Lstm_Model(model_config)
+model2 = Model(model_config2)
 horizon = pd.Timestamp(year=2018, month=1, day=10).tz_localize('UTC').tz_localize(None)
 model.fit_fcast(data, horizon)
-"""
+model2.fit_fcast(data, horizon)

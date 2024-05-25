@@ -320,6 +320,6 @@ class PortfolioManager:
 ########### TEST PM ##############
 from utils.load import load_json_config
 
-pm_config = load_json_config(r"src/pfManger_settings/pfPaperMananger_settings.json")
+pm_config = load_json_config(r"pfManger_settings/pfPaperMananger_settings.json")
 bot = PortfolioManager(pm_config)
 bot.start()
