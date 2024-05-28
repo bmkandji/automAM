@@ -6,6 +6,10 @@ import exchange_calendars as ecals
 from datetime import datetime, timedelta
 from typing import List, Tuple
 import requests
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.constraints import Constraint
+from tensorflow.keras import backend as K
 
 
 def compute_log_returns(df: pd.DataFrame, scale: float = 100) -> pd.DataFrame:

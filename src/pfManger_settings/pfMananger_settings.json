@@ -1,5 +1,5 @@
 {
-    "symbols": ["AAPL", "GOOGL", "MSFT"],
+    "symbols": ["AAPL", "AMZN", "GOOGL", "MSFT"],
 
     "market": "XNYS",
 
@@ -28,29 +28,34 @@
 
     "portfolio": {
                     "fixed_weights" : {
-                    "index_And_weights": [[1, 0, 0, 0],[0, 0, 0, 0]],
-                    "minmax_cash": [1000, 2000],
-                    "target_cash_weights":  0.01},
+                    "index_And_weights": [[1, 0, 0, 0,0],[0, 0, 0, 0,0]],
+                    "minmax_cash": [0, 2000],
+                    "target_cash_weights":  0.1},
             "ref_portfolios": {
                 "AAPL": {
                     "capital": null,
-                    "next_weights": [0.0, 1.0, 0.0, 0.0],
+                    "next_weights": [0.0, 1.0, 0.0, 0.0, 0.0],
+                    "weights": null
+                },
+                "AMZN": {
+                    "capital": null,
+                    "next_weights": [0.0, 0.0, 1.0, 0.0, 0.0],
                     "weights": null
                 },
                 "GOOGL": {
                     "capital": null,
-                    "next_weights": [0.0, 0.0, 1.0, 0.0],
+                    "next_weights": [0.0, 0.0, 0.0, 1.0, 0.0],
                     "weights": null
                 },
                 "MSFT": {
                     "capital": null,
-                    "next_weights": [0.0, 0.0, 0.0, 1.0],
+                    "next_weights": [0.0, 0.0, 0.0, 0.0, 1.0],
                     "weights": null
 
                 },
                 "Eq_weighted": {
                     "capital": null,
-                    "next_weights": [0.0, 0.33, 0.33, 0.34],
+                    "next_weights": [0.0, 0.25, 0.25, 0.25, 0.25],
                     "weights": null
 
                                 }
@@ -61,14 +66,14 @@
     "strategy":
                 {
                     "strategy": "mean_var",
-                    "aversion": 0,
+                    "aversion": 5,
                     "fee_rate": 0.0,
                     "bounds": [0, null]
                 },
 
     "api": {
-                "api_key": "AK8RR9RZLSLBG9D8UD80",
-                "api_secret": "KyZaPPJNFu6uz7bKLsofwccZwBYNAUbh9YhoFvta",
+                "api_key": "AK1AW2JQWYZB5I6VDSRM",
+                "api_secret": "78HCBY8XL3SjAhVslLEfh2rrkKwaFq3tXZoyRfgt",
                 "base_url": "https://api.alpaca.markets",
                 "api_version": "v2",
                 "cash": "USD"

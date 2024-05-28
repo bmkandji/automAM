@@ -17,6 +17,10 @@ from src.common import (get_last_trading_day,
                         trunc_decimal,
                         get_current_time)
 from utils import portfolio_tools as pf_t
+from configs.root_config import set_project_root
+
+# Configure the path to the project root
+set_project_root()
 
 
 class PortfolioManager:
@@ -320,6 +324,6 @@ class PortfolioManager:
 ########### TEST PM ##############
 from utils.load import load_json_config
 
-pm_config = load_json_config(r"pfManger_settings/pfPaperMananger_settings.json")
+pm_config = load_json_config(r"src/pfManger_settings/pfMananger_settings.json")
 bot = PortfolioManager(pm_config)
 bot.start()

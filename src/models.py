@@ -3,7 +3,6 @@ import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.vectors import ListVector
 from configs.rpy2_setup import setup_environment
-from src.common import weighting
 from src.abstract import _Model
 import src.common as cm
 from src.data_mn import Data
@@ -176,8 +175,8 @@ class Model(_Model):
         means = np.array([np.array(vec).flatten() for vec in results.rx2('means')])
         covariances = np.array([np.array(vec) for vec in results.rx2('covariances')])
 
-        mean = weighting(means, scheme=self._model_config['model_config']["weights"])
-        covariance = weighting(covariances, scheme=self._model_config['model_config']["weights"])
+        mean = cm.weighting(means, scheme=self._model_config['model_config']["weights"])
+        covariance = cm.weighting(covariances, scheme=self._model_config['model_config']["weights"])
 
         _, value = next(iter(data.data_config["cash"].items()))
         mean = np.insert(mean, 0, value)
@@ -256,10 +255,10 @@ class Lstm_Model(_Model):
 
             model.compile(optimizer='adam', loss='mean_squared_error')
             # ajustement du modèle avec les nouvelles données
-            #model.fit(X_train, y_train,
-             #         epochs=1, batch_size=20,
-             #         validation_split=0.2,
-             #         verbose=1)
+            model.fit(X_train, y_train,
+                      epochs=1, batch_size=20,
+                      validation_split=0.2,
+                      verbose=1)
 
         if not (model and scaler_X and scaler_y):
             scaler_X = MinMaxScaler(feature_range=(0, 1))
@@ -280,7 +279,7 @@ class Lstm_Model(_Model):
                 Dropout(0.3),
                 Dense(64, activation='relu'),
                 Dense(32, activation='relu'),
-                Dense(y_train.shape[1])
+                Dense(y_train.shape[1], activation='linear')
             ])
 
             model.compile(optimizer='adam', loss='mean_squared_error')
