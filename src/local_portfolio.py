@@ -241,8 +241,6 @@ class Portfolio(Position):
             )
             # Update the portfolio configuration
             self.pf_config["fixed_weights"]["index_And_weights"][1][0] = new_cash_weight
-            # Print the new cash weight
-            print(self.pf_config["fixed_weights"]["index_And_weights"][1][0])
         else:
             # Raise an error if the capital is not sufficient
             raise ValueError("Insufficient capital for investment.")
