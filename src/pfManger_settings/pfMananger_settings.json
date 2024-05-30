@@ -30,7 +30,7 @@
                     "fixed_weights" : {
                     "index_And_weights": [[1, 0, 0, 0,0],[0, 0, 0, 0,0]],
                     "minmax_cash": [0, 2000],
-                    "target_cash_weights":  0.1},
+                    "target_cash_weights":  0},
             "ref_portfolios": {
                 "AAPL": {
                     "capital": null,

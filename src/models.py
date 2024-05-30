@@ -313,12 +313,11 @@ class Lstm_Model(_Model):
         mean = np.array(new_y[:nb_asset])
         mean_matrix = mean.reshape(-1, 1)
         covariance = np.array(cm.reconstruct_matrix(new_y[nb_asset:])) - np.dot(mean_matrix, mean_matrix.T)
-        print(mean)
-        print(covariance)
         _, value = next(iter(data.data_config["cash"].items()))
         mean = np.insert(mean, 0, value)
         covariance = np.insert(np.insert(covariance, 0, 0, axis=1), 0, 0, axis=0)
-
+        print(mean)
+        print(covariance)
         metrics = {
             "fit_date": data.data_config["end_date"],
             "horizon": horizon,
@@ -332,7 +331,7 @@ class Lstm_Model(_Model):
         self._metrics = metrics
         data.update_metrics(self)
 
-
+"""
 data_config = load_json_config(r'src/data_settings/data_settings.json')
 model_config = load_json_config(r'src/model_settings/model_settings_LSTM.json')
 model_config2 = load_json_config(r'src/model_settings/model_settings.json')
@@ -344,3 +343,4 @@ model2 = Model(model_config2)
 horizon = pd.Timestamp(year=2018, month=1, day=10).tz_localize('UTC').tz_localize(None)
 model.fit_fcast(data, horizon)
 model2.fit_fcast(data, horizon)
+"""

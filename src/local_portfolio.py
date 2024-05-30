@@ -130,6 +130,7 @@ class Portfolio(Position):
         """
         if "model" not in self.metrics:
             raise ValueError("The portfolio metrics are empty or incomplete, please update with trained data.")
+        self.update_cash_weight()
         next_weights = strategies.fit(self)
         checks_weights(next_weights)  # Check sum to 1
         self._next_weights = next_weights
@@ -167,9 +168,8 @@ class Portfolio(Position):
 
             capital_weights = rem_portfolio.weights()
             observed_weights = np.array([capital_weights["weights"][asset]
-                                for asset in
-                                ["cash"] + self.pf_config["symbols"]])
-
+                                         for asset in
+                                         ["cash"] + self.pf_config["symbols"]])
             if get_last_trading_day(capital_weights["date"], self.pf_config["market"]) != data.data_config["end_date"]:
                 raise ValueError("The date of data and remote portfolio are not coherent")
 
@@ -212,17 +212,9 @@ class Portfolio(Position):
                         self.metrics["scale"])
         else:
             raise ValueError("The references portfolios are note updated since many period.")
-
+        print(update_weights)
         if update_weights:
-            if self.capital > self.pf_config["fixed_weights"]["minmax_cash"][0]:
-                self.pf_config["fixed_weights"]["index_And_weights"][1][0] \
-                    = min(
-                    max(self.pf_config["fixed_weights"]["minmax_cash"][0]/self.capital,
-                        self.pf_config["fixed_weights"]["target_cash_weights"]),
-                    self.pf_config["fixed_weights"]["minmax_cash"][1]/self.capital)
-            else:
-                raise ValueError("Insufficient capital for investment.")
-
+            self.update_cash_weight()
             self.update_metrics(data)
             strategies = self.strategy if strategies is None else strategies
             self.update_weights(strategies)
@@ -230,3 +222,27 @@ class Portfolio(Position):
         else:
             self._metrics = {}
             self._next_weights = self.weights
+
+    def update_cash_weight(self):
+        """
+        Update the cash weight in the portfolio configuration if the capital is above the minimum threshold.
+        Adjusts the cash weight within the specified min/max bounds based on the current capital.
+        Raises an error if the capital is below the minimum threshold.
+        """
+        # Check if the capital is above the minimum defined
+        if self.capital > self.pf_config["fixed_weights"]["minmax_cash"][0]:
+            # Calculate the new weight for cash
+            new_cash_weight = min(
+                max(
+                    self.pf_config["fixed_weights"]["minmax_cash"][0] / self.capital,
+                    self.pf_config["fixed_weights"]["target_cash_weights"]
+                ),
+                self.pf_config["fixed_weights"]["minmax_cash"][1] / self.capital
+            )
+            # Update the portfolio configuration
+            self.pf_config["fixed_weights"]["index_And_weights"][1][0] = new_cash_weight
+            # Print the new cash weight
+            print(self.pf_config["fixed_weights"]["index_And_weights"][1][0])
+        else:
+            # Raise an error if the capital is not sufficient
+            raise ValueError("Insufficient capital for investment.")

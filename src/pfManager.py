@@ -110,6 +110,7 @@ class PortfolioManager:
         today = get_current_time()
         self.data.fetch_data(
             today - timedelta(days=pm_config["hist_dataLen"]), today)
+        self.data.update_data()
         self.model.fit_fcast(self.data,
                              self.data.data_config["end_date"] +
                              timedelta(days=self.data.data_config["horizon"]))
@@ -324,6 +325,6 @@ class PortfolioManager:
 ########### TEST PM ##############
 from utils.load import load_json_config
 
-pm_config = load_json_config(r"src/pfManger_settings/pfMananger_settings.json")
+pm_config = load_json_config(r"src/pfManger_settings/pfPaperMananger_settings.json")
 bot = PortfolioManager(pm_config)
 bot.start()

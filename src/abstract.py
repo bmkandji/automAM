@@ -93,8 +93,9 @@ class _Data(ABC):
         Méthode abstraite pour mettre à jour les données jusqu'à une nouvelle date de fin.
         La date de fin est optionnelle; si non spécifiée, peut-être mise à jour jusqu'à la date courante.
         """
+
         if new_end_date is None:
-            new_end_date = get_current_time()
+            new_end_date = get_current_time().replace(tzinfo=None)
 
         if self.data.empty:
             raise ValueError("please fetch before update")
