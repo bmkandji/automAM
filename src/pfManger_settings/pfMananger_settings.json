@@ -2,16 +2,16 @@
     "symbols": ["AAPL", "AMZN", "GOOGL", "MSFT"],
 
     "market": "XNYS",
-
-    "hist_dataLen": 3650,
     "horizon": 30,
 
     "data": {
                 "start_date": null,
                 "end_date": null,
                 "scale": 100,
-                "cash": {"USD":  0.0}
-                        },
+                "cash": {"USD":  0.0},
+                "hist_dataLen": 3650
+    },
+
 
     "model": {
                 "model_config": {

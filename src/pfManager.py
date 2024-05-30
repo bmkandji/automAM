@@ -10,7 +10,7 @@ from src.models import Model
 from src.data_mn import Data
 from src.strategies import Strategies
 from datetime import datetime, timedelta
-from api import API
+from src.api import API
 from src.common import (get_last_trading_day,
                         market_settings_date,
                         Check_and_update_Date,
@@ -109,7 +109,7 @@ class PortfolioManager:
     def __init_update(self):
         today = get_current_time()
         self.data.fetch_data(
-            today - timedelta(days=pm_config["hist_dataLen"]), today)
+            today - timedelta(days=self.data.data_config["hist_dataLen"]), today)
         self.model.fit_fcast(self.data,
                              self.data.data_config["end_date"] +
                              timedelta(days=self.data.data_config["horizon"]))
@@ -292,7 +292,7 @@ class PortfolioManager:
             if to_update:
                 print("Rebalancing period")
                 if self.portfolio.date != get_last_trading_day(self.rebal_date[0][1],
-                                                               pm_config["market"]) or self.to_init:
+                                                               self.rportfolio.pf_config["market"]) or self.to_init:
                     print("Calibration has not been done, Calibration...")
                     self.__update_portfolio(True)
 
@@ -319,11 +319,3 @@ class PortfolioManager:
         thread = threading.Thread(target=self.start)
         thread.daemon = True
         thread.start()
-
-
-########### TEST PM ##############
-from utils.load import load_json_config
-
-pm_config = load_json_config(r"src/pfManger_settings/pfMananger_settings.json")
-bot = PortfolioManager(pm_config)
-bot.start()
