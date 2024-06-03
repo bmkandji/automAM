@@ -199,7 +199,9 @@ class PortfolioManager:
         # Trier les ordres par valeur décroissante
         buy_orders.sort(key=lambda x: x["value"], reverse=True)
         sell_orders.sort(key=lambda x: x["value"], reverse=True)
-
+        self.pending_orders["buy"] = [order
+                                      for order in self.pending_orders["buy"]
+                                      if order["value"] > 1.0]
         self.pending_orders = {"sell": sell_orders, "buy": buy_orders}
 
     def __execute_orders(self):
@@ -234,10 +236,12 @@ class PortfolioManager:
 
                 # Scale down each buy order proportionally if total buy value exceeds available cash
                 for order in self.pending_orders["buy"]:
-                    order["value"] = trunc_decimal(order["value"] * (current_cash / total_buy_value) - 0.01, 1)
+                    order["value"] = trunc_decimal(order["value"] * (current_cash / total_buy_value), 1)
 
                 # Remove buy orders with value less than or equal to 0.05 after adjustment
-                self.pending_orders["buy"] = [order for order in self.pending_orders["buy"] if order["value"] > 0.1]
+                self.pending_orders["buy"] = [order
+                                              for order in self.pending_orders["buy"]
+                                              if order["value"] > 1.0]
 
         # Execute buy orders
         # Iterate over a copy of the list to allow safe removal of items
