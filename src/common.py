@@ -4,7 +4,7 @@ from typing import Any
 from decimal import Decimal, getcontext, ROUND_DOWN
 import exchange_calendars as ecals
 from datetime import datetime, timedelta
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import requests
 import numpy as np
 import tensorflow as tf
@@ -160,9 +160,9 @@ def market_settings_date(cal_name: str, start: datetime, end: datetime) -> List[
         current_date += timedelta(days=1)
 
     # Add one hour before and after the open time to each trading day
-    settings_hours = [(open_session - timedelta(hours=10),
+    settings_hours = [(open_session - timedelta(hours=100),
                        open_session,
-                       open_session + timedelta(hours=10))
+                       open_session + timedelta(hours=1))
                       for open_session in open_sessions]
 
     return settings_hours
@@ -198,6 +198,24 @@ def trunc_decimal(number: float, decimals: int) -> float:
     # Quantizer le nombre à ce facteur
     return float(Decimal(number).quantize(factor))
 
+
+def normalize_order(orders: List[Dict], min_value: float = 1.0) -> List[Dict]:
+    """
+    Filters a list of orders to only include those with a value greater than a specified minimum value.
+
+    Parameters:
+    orders (List[Dict]): A list of dictionaries, each representing an order with at least a 'value' key.
+    min_value (float): The minimum value threshold for orders to be included in the result. Default is 1.0.
+
+    Returns:
+    List[Dict]: A list of dictionaries containing only the orders with a 'value' greater than min_value.
+    """
+    # Use a list comprehension to filter the orders
+    return [
+        order  # Include the order in the resulting list
+        for order in orders  # Iterate through each order in the input list
+        if order["value"] > min_value  # Only include orders where the 'value' key is greater than min_value
+    ]
 
 def get_current_time():
     # URL de l'API World Time pour UTC

@@ -15,7 +15,8 @@ from src.common import (get_last_trading_day,
                         market_settings_date,
                         Check_and_update_Date,
                         trunc_decimal,
-                        get_current_time)
+                        get_current_time,
+                        normalize_order)
 from utils import portfolio_tools as pf_t
 from configs.root_config import set_project_root
 
@@ -196,12 +197,12 @@ class PortfolioManager:
                                                            * current_prices[asset], 1),
                                     "type": "qty"})
 
-        # Trier les ordres par valeur décroissante
+        # Normaliser et Trier les ordres par valeur décroissante
+        buy_orders = normalize_order(buy_orders)
+        sell_orders = normalize_order(sell_orders)
         buy_orders.sort(key=lambda x: x["value"], reverse=True)
         sell_orders.sort(key=lambda x: x["value"], reverse=True)
-        self.pending_orders["buy"] = [order
-                                      for order in self.pending_orders["buy"]
-                                      if order["value"] > 1.0]
+
         self.pending_orders = {"sell": sell_orders, "buy": buy_orders}
 
     def __execute_orders(self):
@@ -239,9 +240,7 @@ class PortfolioManager:
                     order["value"] = trunc_decimal(order["value"] * (current_cash / total_buy_value), 1)
 
                 # Remove buy orders with value less than or equal to 0.05 after adjustment
-                self.pending_orders["buy"] = [order
-                                              for order in self.pending_orders["buy"]
-                                              if order["value"] > 1.0]
+                self.pending_orders["buy"] = normalize_order(self.pending_orders["buy"])
 
         # Execute buy orders
         # Iterate over a copy of the list to allow safe removal of items
