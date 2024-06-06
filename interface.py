@@ -4,7 +4,7 @@ import random
 import threading
 import time
 from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication, QComboBox, QListWidget, QCheckBox, QListWidgetItem, QGroupBox, QSlider, QLabel, QVBoxLayout, QHBoxLayout
+from PyQt5.QtWidgets import QApplication, QComboBox, QListWidget, QCheckBox, QListWidgetItem, QGroupBox, QSlider, QLabel, QVBoxLayout, QHBoxLayout, QFormLayout, QTextEdit
 from PyQt5.QtCore import QObject, pyqtSignal, Qt, QTimer
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -52,7 +52,7 @@ class App(QtWidgets.QWidget):
         self.initUI()
         self.setStyleSheet(self.get_styles())
         self.timer = QTimer(self)
-        self.stop_flag = False  # Flag to indicate if the script should be stopped
+        self.stop_event = threading.Event()  # Event to signal the thread to stop
         self.script_thread = None  # Thread to run the main script
 
         # Initialize the rpy2 context for the main thread
@@ -62,13 +62,19 @@ class App(QtWidgets.QWidget):
         self.setWindowTitle('Run Portfolio Manager')
         layout = QVBoxLayout()
 
+        # Group for Settings
+        settings_group = QGroupBox("Settings")
+        settings_layout = QFormLayout()
+        settings_group.setLayout(settings_layout)
+
         self.comboBoxList = QListWidget()
+        self.comboBoxList.setSelectionMode(QListWidget.SingleSelection)
         options = ["Default Settings", "Option 1", "Option 2", "Option 3"]
         for option in options:
             item = QListWidgetItem(option)
             checkbox = QCheckBox()
             checkbox.setText(option)
-            checkbox.stateChanged.connect(self.update_option_visibility)
+            checkbox.stateChanged.connect(self.handle_asset_selection)
             self.comboBoxList.addItem(item)
             self.comboBoxList.setItemWidget(item, checkbox)
         self.comboBox0 = QComboBox()
@@ -79,80 +85,75 @@ class App(QtWidgets.QWidget):
         self.comboBox.addItems(["Default Settings", "Mean-Var", "Traking-Error", "Targeting-vol"])
         self.comboBox.currentIndexChanged.connect(self.update_option_visibility)
 
-        # Boutons Start et Stop
-        self.btn_start = QtWidgets.QPushButton('Start', self)
-        self.btn_start.clicked.connect(self.start_script)
-        self.btn_stop = QtWidgets.QPushButton('Stop', self)
-        self.btn_stop.clicked.connect(self.stop_script)
-        self.btn_stop.setObjectName("btn_stop")  # Set object name for styling
+        settings_layout.addRow("Select Assets:", self.comboBox0)
+        settings_layout.addRow("Select Strategy:", self.comboBox)
 
-        # Disposition horizontale pour les boutons
-        buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(self.btn_start)
-        buttons_layout.addWidget(self.btn_stop)
-
-        # Slider gradué de 1 à 100
-        self.slider1 = QSlider(Qt.Horizontal)
-        self.slider1.setMinimum(0)
-        self.slider1.setMaximum(100)
-        self.slider1.setValue(50)
-        self.slider1.setTickPosition(QSlider.TicksBelow)
-        self.slider1.setTickInterval(1)
-
-        # Étiquette pour afficher la valeur actuelle du slider
-        self.slider1_value_label = QLabel(f"Slider Value: {self.slider1.value()}")
-        self.slider1.valueChanged.connect(self.update_slider_value_label)
-
-        self.option1Group = QGroupBox("Mean-Var Settings")
-        self.option2Group = QGroupBox("Traking-Error Settings")
-        self.option3Group = QGroupBox("Targeting-vol Settings")
-
+        # Sliders and checkboxes for options
         self.option1Slider = QSlider(Qt.Horizontal)
         self.option1Slider.setMinimum(0)
         self.option1Slider.setMaximum(100)
         self.option1Slider.setTickPosition(QSlider.TicksBelow)
         self.option1Slider.setTickInterval(10)
+        self.option1Slider_label = QLabel(f"Current Value: {self.option1Slider.value()}")
+        self.option1Slider.valueChanged.connect(self.update_option1_slider_value_label)
 
         self.option2Slider = QSlider(Qt.Horizontal)
         self.option2Slider.setMinimum(0)
         self.option2Slider.setMaximum(50)
         self.option2Slider.setTickPosition(QSlider.TicksBelow)
         self.option2Slider.setTickInterval(5)
+        self.option2Slider_label = QLabel(f"Current Value: {self.option2Slider.value()}")
+        self.option2Slider.valueChanged.connect(self.update_option2_slider_value_label)
 
-        self.option3Checkbox1 = QCheckBox("Sub Option 1")
-        self.option3Checkbox2 = QCheckBox("Sub Option 2")
-        self.option3Checkbox3 = QCheckBox("Sub Option 3")
+        self.option3ComboBox = QComboBox()
+        self.option3ComboBox.addItems(["Sub Option 1", "Sub Option 2", "Sub Option 3"])
+        self.option3ComboBox.currentIndexChanged.connect(self.update_option_visibility)
 
-        self.canvas = PlotCanvas(self, width=8, height=6)
+        self.option1Group = QGroupBox("Mean-Var Settings")
+        self.option2Group = QGroupBox("Traking-Error Settings")
+        self.option3Group = QGroupBox("Targeting-vol Settings")
 
         option1Layout = QVBoxLayout()
         option1Layout.addWidget(QLabel("Aversion:"))
         option1Layout.addWidget(self.option1Slider)
+        option1Layout.addWidget(self.option1Slider_label)
         self.option1Group.setLayout(option1Layout)
 
         option2Layout = QVBoxLayout()
         option2Layout.addWidget(QLabel("Another Slider:"))
         option2Layout.addWidget(self.option2Slider)
+        option2Layout.addWidget(self.option2Slider_label)
         self.option2Group.setLayout(option2Layout)
 
         option3Layout = QVBoxLayout()
-        option3Layout.addWidget(self.option3Checkbox1)
-        option3Layout.addWidget(self.option3Checkbox2)
-        option3Layout.addWidget(self.option3Checkbox3)
+        option3Layout.addWidget(QLabel("Sub Options:"))
+        option3Layout.addWidget(self.option3ComboBox)
         self.option3Group.setLayout(option3Layout)
 
-        self.log_widget = QtWidgets.QTextEdit(self)
-        self.log_widget.setReadOnly(True)
+        settings_layout.addRow(self.option1Group)
+        settings_layout.addRow(self.option2Group)
+        settings_layout.addRow(self.option3Group)
 
-        layout.addWidget(self.comboBox0)
-        layout.addWidget(self.comboBox)
+        # Bouton Start/Stop
+        self.btn_start_stop = QtWidgets.QPushButton('Start', self)
+        self.btn_start_stop.clicked.connect(self.toggle_script)
+        self.btn_start_stop.setObjectName("btn_start_stop")  # Set object name for styling
+
+        # Disposition horizontale pour les boutons
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addWidget(self.btn_start_stop)
+
+        self.log_widget = QTextEdit(self)
+        self.log_widget.setReadOnly(True)
+        self.log_widget.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+
+        self.canvas = PlotCanvas(self, width=8, height=6)
+
+        layout.addWidget(settings_group)
         layout.addLayout(buttons_layout)  # Ajouter la disposition des boutons
+        layout.addWidget(QLabel("Logs:"))
         layout.addWidget(self.log_widget)
-        layout.addWidget(self.slider1)
-        layout.addWidget(self.slider1_value_label)  # Ajouter l'étiquette pour la valeur du slider
-        layout.addWidget(self.option1Group)
-        layout.addWidget(self.option2Group)
-        layout.addWidget(self.option3Group)
+        layout.addWidget(QLabel("Graph:"))
         layout.addWidget(self.canvas)
 
         self.setLayout(layout)
@@ -165,23 +166,21 @@ class App(QtWidgets.QWidget):
                 background-color: #f0f0f0;
                 font-family: Arial, sans-serif;
             }
-            QPushButton {
+            QPushButton#btn_start_stop {
                 background-color: #4CAF50;
                 color: white;
                 border-radius: 5px;
                 padding: 10px;
             }
-            QPushButton:hover {
+            QPushButton#btn_start_stop:hover {
                 background-color: #45a049;
             }
-            QPushButton#btn_stop {
-                background-color: #FFEB3B;
-                color: black;
-                border-radius: 5px;
-                padding: 10px;
+            QPushButton#btn_start_stop[stop=true] {
+                background-color: #FF0000;
+                color: white;
             }
-            QPushButton#btn_stop:hover {
-                background-color: #FDD835;
+            QPushButton#btn_start_stop[stop=true]:hover {
+                background-color: #FF4500;
             }
             QTextEdit {
                 background-color: #ffffff;
@@ -241,20 +240,44 @@ class App(QtWidgets.QWidget):
         elif selected_option == "Targeting-vol":
             self.option3Group.setVisible(True)
 
-    def update_slider_value_label(self):
-        self.slider1_value_label.setText(f"Slider Value: {self.slider1.value()}")
+    def handle_asset_selection(self):
+        for i in range(self.comboBoxList.count()):
+            item = self.comboBoxList.item(i)
+            checkbox = self.comboBoxList.itemWidget(item)
+            if checkbox.text() == "Default Settings" and checkbox.isChecked():
+                for j in range(self.comboBoxList.count()):
+                    other_item = self.comboBoxList.item(j)
+                    other_checkbox = self.comboBoxList.itemWidget(other_item)
+                    if other_checkbox.text() != "Default Settings":
+                        other_checkbox.setChecked(False)
+                        other_checkbox.setEnabled(False)
+            elif checkbox.text() == "Default Settings" and not checkbox.isChecked():
+                for j in range(self.comboBoxList.count()):
+                    other_item = self.comboBoxList.item(j)
+                    other_checkbox = self.comboBoxList.itemWidget(other_item)
+                    if other_checkbox.text() != "Default Settings":
+                        other_checkbox.setEnabled(True)
+
+    def update_option1_slider_value_label(self):
+        self.option1Slider_label.setText(f"Current Value: {self.option1Slider.value()}")
+
+    def update_option2_slider_value_label(self):
+        self.option2Slider_label.setText(f"Current Value: {self.option2Slider.value()}")
+
+    def toggle_script(self):
+        if self.btn_start_stop.property('stop'):
+            self.stop_script()
+        else:
+            self.start_script()
 
     def start_script(self):
-        self.stop_flag = False  # Reset the stop flag when starting the script
+        self.set_widgets_enabled(False)
+        self.stop_event.clear()  # Reset the stop event when starting the script
         data = {
-            "slider_value": self.slider1.value(),
+            "slider_value": self.option1Slider.value(),
             "option1_input": self.option1Slider.value() if self.option1Group.isVisible() else "",
             "option2_input": self.option2Slider.value() if self.option2Group.isVisible() else "",
-            "option3_input": [
-                self.option3Checkbox1.isChecked(),
-                self.option3Checkbox2.isChecked(),
-                self.option3Checkbox3.isChecked()
-            ] if self.option3Group.isVisible() else ""
+            "option3_input": self.option3ComboBox.currentText() if self.option3Group.isVisible() else ""
         }
         with open("data.json", "w") as file:
             json.dump(data, file)
@@ -269,39 +292,69 @@ class App(QtWidgets.QWidget):
 
         self.timer.start(1000)  # Mettre à jour le graphique toutes les secondes
 
+        self.btn_start_stop.setText('Stop')
+        self.btn_start_stop.setProperty('stop', True)
+        self.btn_start_stop.setStyle(self.btn_start_stop.style())
+
     def stop_script(self):
-        self.stop_flag = True  # Set the stop flag to True to indicate the script should stop
+        self.stop_event.set()  # Set the stop event to signal the thread to stop
         if self.script_thread is not None:
             self.script_thread.join()  # Wait for the thread to finish
+            self.script_thread = None  # Reset the script_thread to None
         self.timer.stop()
-        self.log_widget.clear()
+        self.set_widgets_enabled(True)
+
+        self.btn_start_stop.setText('Start')
+        self.btn_start_stop.setProperty('stop', False)
+        self.btn_start_stop.setStyle(self.btn_start_stop.style())
+
+    def set_widgets_enabled(self, enabled):
+        self.comboBoxList.setEnabled(enabled)
+        self.comboBox0.setEnabled(enabled)
+        self.comboBox.setEnabled(enabled)
+        self.option1Slider.setEnabled(enabled)
+        self.option2Slider.setEnabled(enabled)
+        self.option3ComboBox.setEnabled(enabled)
+        self.option1Group.setEnabled(enabled)
+        self.option2Group.setEnabled(enabled)
+        self.option3Group.setEnabled(enabled)
 
     def run_main(self, ctx):
         # Run the main function within the provided context
         ctx.run(self._run_main)
 
     def _run_main(self):
-        while not self.stop_flag:
+        while not self.stop_event.is_set():
             try:
                 main()  # Appeler directement la fonction main
-                time.sleep(1)  # Ajouter un délai pour simuler un travail en cours
+                for _ in range(10):  # Add this to periodically check for the stop event
+                    if self.stop_event.is_set():
+                        return  # Exit the function if the stop event is set
+                    time.sleep(0.1)  # Ajouter un délai pour simuler un travail en cours
             except Exception as e:
                 self.on_thread_error(str(e))
                 break
         self.on_thread_finished()
 
     def on_text_written(self, text):
-        self.log_widget.moveCursor(QtGui.QTextCursor.End)
-        self.log_widget.insertPlainText(text)
-        QtWidgets.QApplication.processEvents()
+        cursor = self.log_widget.textCursor()
+        at_bottom = cursor.atEnd()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertText(text)
+        if at_bottom:
+            self.log_widget.ensureCursorVisible()
+        self.log_widget.setTextCursor(cursor)
 
     def on_thread_finished(self):
         self.plot_results()
         self.timer.stop()  # Arrêter le timer lorsque la fonction est terminée
 
     def on_thread_error(self, error_message):
-        self.log_widget.moveCursor(QtGui.QTextCursor.End)
-        self.log_widget.insertPlainText(f"Error: {error_message}\n")
+        cursor = self.log_widget.textCursor()
+        cursor.movePosition(QtGui.QTextCursor.End)
+        cursor.insertText(f"Error: {error_message}\n")
+        self.log_widget.setTextCursor(cursor)
+        self.log_widget.ensureCursorVisible()
         QtWidgets.QApplication.processEvents()
 
     def plot_example_data(self):
