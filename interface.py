@@ -273,12 +273,20 @@ class App(QtWidgets.QWidget):
     def start_script(self):
         self.set_widgets_enabled(False)
         self.stop_event.clear()  # Reset the stop event when starting the script
+
+        # Collect all widget values
+        selected_assets = [self.comboBoxList.itemWidget(self.comboBoxList.item(i)).text()
+                           for i in range(self.comboBoxList.count())
+                           if self.comboBoxList.itemWidget(self.comboBoxList.item(i)).isChecked()]
+
         data = {
-            "slider_value": self.option1Slider.value(),
-            "option1_input": self.option1Slider.value() if self.option1Group.isVisible() else "",
-            "option2_input": self.option2Slider.value() if self.option2Group.isVisible() else "",
-            "option3_input": self.option3ComboBox.currentText() if self.option3Group.isVisible() else ""
+            "selected_assets": selected_assets,
+            "selected_strategy": self.comboBox.currentText(),
+            "option1_slider_value": self.option1Slider.value() if self.option1Group.isVisible() else "",
+            "option2_slider_value": self.option2Slider.value() if self.option2Group.isVisible() else "",
+            "option3_selected_option": self.option3ComboBox.currentText() if self.option3Group.isVisible() else ""
         }
+
         with open("data.json", "w") as file:
             json.dump(data, file)
 
