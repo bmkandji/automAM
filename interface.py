@@ -10,6 +10,8 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 import rpy2.robjects as robjects
 import contextvars
+from utils.load import load_json_config
+from utils.input import interface_input
 from main import main  # Assuming main is a function you want to run
 
 # Assume this is the context variable used by rpy2
@@ -158,6 +160,10 @@ class App(QtWidgets.QWidget):
 
         self.setLayout(layout)
 
+        # Sélectionner par défaut "Default Settings" et "Default Settings" pour la stratégie
+        self.comboBoxList.itemWidget(self.comboBoxList.item(0)).setChecked(True)
+        self.comboBox.setCurrentIndex(0)
+
         self.update_option_visibility()
 
     def get_styles(self):
@@ -274,28 +280,55 @@ class App(QtWidgets.QWidget):
         self.set_widgets_enabled(False)
         self.stop_event.clear()  # Reset the stop event when starting the script
 
-        # Collect all widget values
+        # Vérifier que toutes les valeurs visibles sont définies
         selected_assets = [self.comboBoxList.itemWidget(self.comboBoxList.item(i)).text()
                            for i in range(self.comboBoxList.count())
                            if self.comboBoxList.itemWidget(self.comboBoxList.item(i)).isChecked()]
 
-        data = {
+        if not selected_assets:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select at least one asset in Select Assets.")
+            self.set_widgets_enabled(True)
+            return
+
+        if self.comboBox.currentIndex() == -1:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select a strategy in Select Strategy.")
+            self.set_widgets_enabled(True)
+            return
+
+        if self.option1Group.isVisible() and self.option1Slider.value() == 0:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please set a value for Aversion in Mean-Var Settings.")
+            self.set_widgets_enabled(True)
+            return
+        if self.option2Group.isVisible() and self.option2Slider.value() == 0:
+            QtWidgets.QMessageBox.warning(self, "Warning",
+                                          "Please set a value for Another Slider in Traking-Error Settings.")
+            self.set_widgets_enabled(True)
+            return
+        if self.option3Group.isVisible() and self.option3ComboBox.currentIndex() == -1:
+            QtWidgets.QMessageBox.warning(self, "Warning", "Please select a Sub Option in Targeting-vol Settings.")
+            self.set_widgets_enabled(True)
+            return
+
+        # Collect all widget values
+        input_data = {
             "selected_assets": selected_assets,
             "selected_strategy": self.comboBox.currentText(),
             "option1_slider_value": self.option1Slider.value() if self.option1Group.isVisible() else "",
             "option2_slider_value": self.option2Slider.value() if self.option2Group.isVisible() else "",
             "option3_selected_option": self.option3ComboBox.currentText() if self.option3Group.isVisible() else ""
         }
-
         with open("data.json", "w") as file:
-            json.dump(data, file)
+            json.dump(input_data, file)
 
         sys.stdout = EmittingStream(text_written=self.on_text_written)
         sys.stderr = EmittingStream(text_written=self.on_text_written)
-
+        # Load the configuration for the Portfolio Manager
+        pm_config = load_json_config(r"src/pfManger_settings/pfPaperMananger_settings.json")
+        pm_config = interface_input(pm_config, input_data)
         # Create a new context for the thread
         thread_context = contextvars.copy_context()
-        self.script_thread = threading.Thread(target=self.run_main, args=(thread_context,))
+        self.script_thread = threading.Thread(target=self.run_main,
+                                              args=(pm_config, thread_context,))
         self.script_thread.start()
 
         self.timer.start(1000)  # Mettre à jour le graphique toutes les secondes
@@ -327,14 +360,14 @@ class App(QtWidgets.QWidget):
         self.option2Group.setEnabled(enabled)
         self.option3Group.setEnabled(enabled)
 
-    def run_main(self, ctx):
+    def run_main(self, pm_config, ctx):
         # Run the main function within the provided context
-        ctx.run(self._run_main)
+        ctx.run(self._run_main(pm_config))
 
-    def _run_main(self):
+    def _run_main(self, pm_config):
         while not self.stop_event.is_set():
             try:
-                main()  # Appeler directement la fonction main
+                main(pm_config)  # Appeler directement la fonction main
                 for _ in range(10):  # Add this to periodically check for the stop event
                     if self.stop_event.is_set():
                         return  # Exit the function if the stop event is set

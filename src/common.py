@@ -1,10 +1,9 @@
 import numpy as np
 import pandas as pd
-from typing import Any
+from typing import Any, List, Tuple, Dict
 from decimal import Decimal, getcontext, ROUND_DOWN
 import exchange_calendars as ecals
 from datetime import datetime, timedelta
-from typing import List, Tuple, Dict
 import requests
 import numpy as np
 import tensorflow as tf

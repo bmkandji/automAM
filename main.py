@@ -3,10 +3,7 @@ from utils.load import load_json_config
 from src.pfManager import PortfolioManager  # Replace with the correct import
 
 
-def main():
-    # Load the configuration for the Portfolio Manager
-    pm_config = load_json_config(r"src/pfManger_settings/pfPaperMananger_settings.json")
-
+def main(pm_config: dict):
     # Create an instance of the PortfolioManager
     bot = PortfolioManager(pm_config)
 
@@ -15,4 +12,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    # Load the configuration for the Portfolio Manager
+    pm_config = load_json_config(r"src/pfManger_settings/pfPaperMananger_settings.json")
+    main(pm_config)
