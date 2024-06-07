@@ -316,8 +316,6 @@ class App(QtWidgets.QWidget):
             "tol": self.option2Slider.value() if self.option2Group.isVisible() else "",
             "ref_portfolio": self.option3ComboBox.currentText() if self.option3Group.isVisible() else ""
         }
-        with open("data.json", "w") as file:
-            json.dump(input_data, file)
 
         sys.stdout = EmittingStream(text_written=self.on_text_written)
         sys.stderr = EmittingStream(text_written=self.on_text_written)
