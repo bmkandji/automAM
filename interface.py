@@ -71,7 +71,7 @@ class App(QtWidgets.QWidget):
 
         self.comboBoxList = QListWidget()
         self.comboBoxList.setSelectionMode(QListWidget.SingleSelection)
-        options = ["Default Settings", "Option 1", "Option 2", "Option 3"]
+        options = ["Default Settings", "AAPL", "AMZN", "GOOGL", "MSFT"]
         for option in options:
             item = QListWidgetItem(option)
             checkbox = QCheckBox()
@@ -84,7 +84,8 @@ class App(QtWidgets.QWidget):
         self.comboBox0.setView(self.comboBoxList)
 
         self.comboBox = QComboBox()
-        self.comboBox.addItems(["Default Settings", "Mean-Var", "Traking-Error", "Targeting-vol"])
+        self.comboBox.addItems(["Default Settings", "Mean-Var",
+                                "Targeting-vol", "Traking-Error"])
         self.comboBox.currentIndexChanged.connect(self.update_option_visibility)
 
         settings_layout.addRow("Select Assets:", self.comboBox0)
@@ -108,27 +109,25 @@ class App(QtWidgets.QWidget):
         self.option2Slider.valueChanged.connect(self.update_option2_slider_value_label)
 
         self.option3ComboBox = QComboBox()
-        self.option3ComboBox.addItems(["Sub Option 1", "Sub Option 2", "Sub Option 3"])
+        self.option3ComboBox.addItems(["Eq_weighted", "Market_Index"])
         self.option3ComboBox.currentIndexChanged.connect(self.update_option_visibility)
 
-        self.option1Group = QGroupBox("Mean-Var Settings")
-        self.option2Group = QGroupBox("Traking-Error Settings")
-        self.option3Group = QGroupBox("Targeting-vol Settings")
+        self.option1Group = QGroupBox("Aversion")
+        self.option2Group = QGroupBox("Max error (%)")
+        self.option3Group = QGroupBox("Reference portfolios")
 
         option1Layout = QVBoxLayout()
-        option1Layout.addWidget(QLabel("Aversion:"))
         option1Layout.addWidget(self.option1Slider)
         option1Layout.addWidget(self.option1Slider_label)
         self.option1Group.setLayout(option1Layout)
 
         option2Layout = QVBoxLayout()
-        option2Layout.addWidget(QLabel("Another Slider:"))
         option2Layout.addWidget(self.option2Slider)
         option2Layout.addWidget(self.option2Slider_label)
+        option2Layout.addWidget(self.option3ComboBox)
         self.option2Group.setLayout(option2Layout)
 
         option3Layout = QVBoxLayout()
-        option3Layout.addWidget(QLabel("Sub Options:"))
         option3Layout.addWidget(self.option3ComboBox)
         self.option3Group.setLayout(option3Layout)
 
@@ -243,6 +242,7 @@ class App(QtWidgets.QWidget):
             self.option1Group.setVisible(True)
         elif selected_option == "Traking-Error":
             self.option2Group.setVisible(True)
+            self.option3Group.setVisible(True)
         elif selected_option == "Targeting-vol":
             self.option3Group.setVisible(True)
 
@@ -295,10 +295,6 @@ class App(QtWidgets.QWidget):
             self.set_widgets_enabled(True)
             return
 
-        if self.option1Group.isVisible() and self.option1Slider.value() == 0:
-            QtWidgets.QMessageBox.warning(self, "Warning", "Please set a value for Aversion in Mean-Var Settings.")
-            self.set_widgets_enabled(True)
-            return
         if self.option2Group.isVisible() and self.option2Slider.value() == 0:
             QtWidgets.QMessageBox.warning(self, "Warning",
                                           "Please set a value for Another Slider in Traking-Error Settings.")
@@ -328,7 +324,7 @@ class App(QtWidgets.QWidget):
         # Create a new context for the thread
         thread_context = contextvars.copy_context()
         self.script_thread = threading.Thread(target=self.run_main,
-                                              args=(pm_config, thread_context,))
+                                              args=(pm_config, thread_context))
         self.script_thread.start()
 
         self.timer.start(1000)  # Mettre à jour le graphique toutes les secondes
@@ -362,7 +358,7 @@ class App(QtWidgets.QWidget):
 
     def run_main(self, pm_config, ctx):
         # Run the main function within the provided context
-        ctx.run(self._run_main(pm_config))
+        ctx.run(self._run_main, pm_config)
 
     def _run_main(self, pm_config):
         while not self.stop_event.is_set():
