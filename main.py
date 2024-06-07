@@ -10,12 +10,14 @@ def main(pm_config: dict):
     # Start the portfolio management process
     bot.start()
 
+"""
 from utils.input import interface_input
 
 if __name__ == '__main__':
     # Load the configuration for the Portfolio Manager
-    input_data = {"selected_assets": ["Default Settings"], "selected_strategy": "Tracking-Error", "aversion": "", "tol": 12, "ref_portfolio": "Eq_weighted"}
+    input_data = {"selected_assets": ["AAPL", "AMZN", "MSFT"], "selected_strategy": "Tracking-Error", "aversion": "", "tol": 100, "ref_portfolio": "Eq_weighted"}
     pm_config = load_json_config(r"src/pfManger_settings/pfPaperMananger_settings.json")
     pm_config = interface_input(pm_config, input_data)
 
     main(pm_config)
+"""

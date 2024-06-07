@@ -317,8 +317,3 @@ class PortfolioManager:
 
             # Add a sleep period to avoid a too-fast infinite loop
             time.sleep(30)
-
-    def run(self):
-        thread = threading.Thread(target=self.start)
-        thread.daemon = True
-        thread.start()
