@@ -63,13 +63,13 @@
                                               }
                               },
 
-                  "strategy":
-                              {
-                                  "strategy": "mean_var",
-                                  "aversion": 5,
-                                  "fee_rate": 0.0,
-                                  "bounds": [0, null]
-                              },
+    "strategy":
+                {
+                    "strategy": "mean_var",
+                    "aversion": 5,
+                    "fee_rate": 0.0,
+                    "bounds": [0, null]
+                },
 
     "api": {
                 "api_key": "AK1AW2JQWYZB5I6VDSRM",
@@ -81,5 +81,5 @@
 
     "rportfolio" : {
                     },
-  "pm_manger": "/src/pfManger_settings/pfManager.pickle"
+  "pm_manger": "C:/Users/MatarKANDJI/automAM/src/pfManger_settings/pfManager.pickle"
 }

@@ -85,7 +85,7 @@ class App(QtWidgets.QWidget):
 
         self.comboBox = QComboBox()
         self.comboBox.addItems(["Default Settings", "Mean-Var",
-                                "Targeting-vol", "Traking-Error"])
+                                "Targeting-vol", "Tracking-Error"])
         self.comboBox.currentIndexChanged.connect(self.update_option_visibility)
 
         settings_layout.addRow("Select Assets:", self.comboBox0)
@@ -96,15 +96,15 @@ class App(QtWidgets.QWidget):
         self.option1Slider.setMinimum(0)
         self.option1Slider.setMaximum(100)
         self.option1Slider.setTickPosition(QSlider.TicksBelow)
-        self.option1Slider.setTickInterval(10)
+        self.option1Slider.setTickInterval(1)
         self.option1Slider_label = QLabel(f"Current Value: {self.option1Slider.value()}")
         self.option1Slider.valueChanged.connect(self.update_option1_slider_value_label)
 
         self.option2Slider = QSlider(Qt.Horizontal)
         self.option2Slider.setMinimum(0)
-        self.option2Slider.setMaximum(50)
+        self.option2Slider.setMaximum(100)
         self.option2Slider.setTickPosition(QSlider.TicksBelow)
-        self.option2Slider.setTickInterval(5)
+        self.option2Slider.setTickInterval(1)
         self.option2Slider_label = QLabel(f"Current Value: {self.option2Slider.value()}")
         self.option2Slider.valueChanged.connect(self.update_option2_slider_value_label)
 
@@ -113,7 +113,7 @@ class App(QtWidgets.QWidget):
         self.option3ComboBox.currentIndexChanged.connect(self.update_option_visibility)
 
         self.option1Group = QGroupBox("Aversion")
-        self.option2Group = QGroupBox("Max error (%)")
+        self.option2Group = QGroupBox()
         self.option3Group = QGroupBox("Reference portfolios")
 
         option1Layout = QVBoxLayout()
@@ -240,10 +240,13 @@ class App(QtWidgets.QWidget):
         selected_option = self.comboBox.currentText()
         if selected_option == "Mean-Var":
             self.option1Group.setVisible(True)
-        elif selected_option == "Traking-Error":
+        elif selected_option == "Tracking-Error":
+            self.option2Group.setTitle("Max Error (%)")
             self.option2Group.setVisible(True)
             self.option3Group.setVisible(True)
         elif selected_option == "Targeting-vol":
+            self.option2Group.setTitle("Target Vol (%)")
+            self.option2Group.setVisible(True)
             self.option3Group.setVisible(True)
 
     def handle_asset_selection(self):
@@ -297,7 +300,7 @@ class App(QtWidgets.QWidget):
 
         if self.option2Group.isVisible() and self.option2Slider.value() == 0:
             QtWidgets.QMessageBox.warning(self, "Warning",
-                                          "Please set a value for Another Slider in Traking-Error Settings.")
+                                          "Please set a value for Another Slider in Tracking-Error Settings.")
             self.set_widgets_enabled(True)
             return
         if self.option3Group.isVisible() and self.option3ComboBox.currentIndex() == -1:
@@ -309,9 +312,9 @@ class App(QtWidgets.QWidget):
         input_data = {
             "selected_assets": selected_assets,
             "selected_strategy": self.comboBox.currentText(),
-            "option1_slider_value": self.option1Slider.value() if self.option1Group.isVisible() else "",
-            "option2_slider_value": self.option2Slider.value() if self.option2Group.isVisible() else "",
-            "option3_selected_option": self.option3ComboBox.currentText() if self.option3Group.isVisible() else ""
+            "aversion": self.option1Slider.value() if self.option1Group.isVisible() else "",
+            "tol": self.option2Slider.value() if self.option2Group.isVisible() else "",
+            "ref_portfolio": self.option3ComboBox.currentText() if self.option3Group.isVisible() else ""
         }
         with open("data.json", "w") as file:
             json.dump(input_data, file)

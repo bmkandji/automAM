@@ -15,7 +15,7 @@
     "tracking_error" :         {
             "strategy": "tracking_error",
             "tol": 1,
-            "ref_asset": "Eq_weighted",
+            "ref_portfolio": "Eq_weighted",
             "fee_rate": 0.0,
             "bounds": [0, null]
         },

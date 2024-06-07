@@ -51,7 +51,7 @@ class Strategies(_Strategies):
 
         elif self.strat_config["strategy"] == "tracking_error":
             arg = [portfolio.metrics["mean"], portfolio.metrics["covariance"],
-                   portfolio.pf_config["ref_portfolios"][self.strat_config["ref_asset"]],
+                   portfolio.pf_config["ref_portfolios"][self.strat_config["ref_portfolio"]],
                    self.strat_config["tol"], self.strat_config["fee_rate"],
                    self.strat_config["bounds"], portfolio.weights, portfolio.capital,
                    portfolio.metrics["scale"], np.array(portfolio.pf_config["fixed_weights"]["index_And_weights"]),

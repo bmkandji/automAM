@@ -26,7 +26,19 @@ def interface_input(default_config: Dict, input_data: Dict) -> Dict:
                                   "next_weights": [0.0 if j == 0
                                                    else eq_weight for j in range(nb_asset)],
                                   "weights": None}
-    #if input_data["selected_strategy"] != "Default Settings":
-    #    if input_data["selected_strategy"] != "Default Settings":
+    if input_data["selected_strategy"] == "Mean-Var":
+        new_default_config["strategy"].update({"strategy": "mean-var",
+                                               "aversion": input_data["aversion"]})
+
+    elif input_data["selected_strategy"] == "Tracking-Error":
+        new_default_config["strategy"].update(
+            {"strategy": "tracking_error",
+             "tol": input_data["tol"],
+             "ref_portfolio": input_data["ref_portfolio"]})
+    elif input_data["selected_strategy"] == "Targeting-vol":
+        new_default_config["strategy"].update(
+            {"strategy": "targeting_vol",
+             "tol": input_data["tol"]/100,
+             "ref_portfolio": input_data["ref_portfolio"]})
 
     return new_default_config
