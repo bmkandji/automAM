@@ -165,13 +165,13 @@ class API(_BrokerAPI, ABC):
                         time_in_force="day"
                     )
                     results.append({"success": True,
-                                    "messages": f"Order to {order["action"]} {order["units"]}  shares of {order["asset"]} in {order["type"]} placed successfully."})
+                                    "messages": f"Order to {order['action']} {order['units']}  shares of {order['asset']} in {order['type']} placed successfully."})
                 else:
-                    raise ValueError(f"Invalid order type: {order["type"]}")
+                    raise ValueError(f"Invalid order type: {order['type']}")
 
             except Exception as e:
                 results.append({"success": False,
-                                "messages": f"Failed to place order to {order["action"]} {order["asset"]} . Error: {str(e)}"})
+                                "messages": f"Failed to place order to {order['action']} {order['asset']} . Error: {str(e)}"})
 
         return results
 
