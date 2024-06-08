@@ -320,7 +320,7 @@ class App(QtWidgets.QWidget):
         sys.stdout = EmittingStream(text_written=self.on_text_written)
         sys.stderr = EmittingStream(text_written=self.on_text_written)
         # Load the configuration for the Portfolio Manager
-        pm_config = load_json_config(r"src/pfManger_settings/pfPaperMananger_settings.json")
+        pm_config = load_json_config(r"src/pfManger_settings/pfMananger_settings.json")
         pm_config = interface_input(pm_config, input_data)
         # Create a new context for the thread
         thread_context = contextvars.copy_context()
