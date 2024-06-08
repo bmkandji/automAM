@@ -10,6 +10,17 @@ def main(pm_config: dict):
     # Start the portfolio management process
     bot.start()
 
+
+def main_bis():
+    # Create an instance of the PortfolioManager
+    pm_config = load_json_config(r"src/pfManger_settings/pfPaperMananger_settings.json")
+
+    bot = PortfolioManager(pm_config)
+
+    # Start the portfolio management process
+    bot.start()
+
+
 """
 from utils.input import interface_input
 

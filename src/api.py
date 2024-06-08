@@ -155,7 +155,7 @@ class API(_BrokerAPI, ABC):
                         time_in_force="day"
                     )
                     results.append({"success": True,
-                                    "messages": f"Order to {order["action"]} {order["value"]}  shares of {order["asset"]} in {order["type"]} placed successfully."})
+                                    "messages": f"Order to {order['action']} {order['value']}  shares of {order['asset']} in {order['type']} placed successfully."})
                 elif order["type"] == "qty":
                     self.api.submit_order(
                         symbol=order["asset"],
