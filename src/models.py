@@ -65,7 +65,17 @@ class Model(_Model):
         """
         ro.r('''
             # Load the 'rmgarch' package, necessary for running multivariate GARCH models.
-            library(rmgarch)
+            # Définir les packages à installer
+            packages <- c("rugarch", "rmgarch")
+            
+            # Installer les packages si nécessaire
+            for (pkg in packages) {
+                if (!require(pkg, character.only = TRUE)) {
+                    install.packages(pkg, repos = 'http://cran.rstudio.com/')
+                    library(pkg, character.only = TRUE)
+                }
+            }
+
             
             # Define a function to run and forecast a DCC GARCH model based on specified parameters.
             run_dcc_garch_and_forecast <- function(returns, model_config, n_ahead, no_fit) {
