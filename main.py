@@ -20,7 +20,7 @@ def main_bis():
     # Start the portfolio management process
     bot.start()
 
-
+main_bis()
 """
 from utils.input import interface_input
 

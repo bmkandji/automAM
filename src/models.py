@@ -21,7 +21,7 @@ from configs.root_config import set_project_root
 set_project_root()
 
 
-class Model(_Model):
+class GARCH_Model(_Model):
     def __init__(self, model_config: dict):
         """
         Initialize the DCC GARCH Model with necessary data and configurations.
@@ -206,7 +206,7 @@ class Model(_Model):
         data.update_metrics(self)
 
 
-class Lstm_Model(_Model):
+class Model(_Model):
     def __init__(self, model_config: dict):
         """
         Initialize the DCC GARCH Model with necessary data and configurations.
@@ -303,7 +303,7 @@ class Lstm_Model(_Model):
                       callbacks=[early_stopping],
                       verbose=1)
 
-            save_MLmodel(model, scaler_X, scaler_y, *self._model_config["model_config"]["model_path"])
+#            save_MLmodel(model, scaler_X, scaler_y, *self._model_config["model_config"]["model_path"])
 
         new_X = cm.sequence_for_predict(data.data[data.data_config["symbols"]].values, time_steps)
 
