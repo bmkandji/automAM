@@ -53,7 +53,7 @@ class App(QtWidgets.QWidget):
         super().__init__()
         self.initUI()
         self.setStyleSheet(self.get_styles())
-        self.timer = QTimer(self)
+        #self.timer = QTimer(self)
         self.stop_event = threading.Event()  # Event to signal the thread to stop
         self.script_thread = None  # Thread to run the main script
 
@@ -328,7 +328,7 @@ class App(QtWidgets.QWidget):
                                               args=(pm_config, thread_context))
         self.script_thread.start()
 
-        self.timer.start(1000)  # Mettre à jour le graphique toutes les secondes
+        #self.timer.start(1000)  # Mettre à jour le graphique toutes les secondes
 
         self.btn_start_stop.setText('Stop')
         self.btn_start_stop.setProperty('stop', True)
@@ -339,7 +339,7 @@ class App(QtWidgets.QWidget):
         if self.script_thread is not None:
             self.script_thread.join()  # Wait for the thread to finish
             self.script_thread = None  # Reset the script_thread to None
-        self.timer.stop()
+        #self.timer.stop()
         self.set_widgets_enabled(True)
 
         self.btn_start_stop.setText('Start')
@@ -385,7 +385,7 @@ class App(QtWidgets.QWidget):
 
     def on_thread_finished(self):
         self.plot_results()
-        self.timer.stop()  # Arrêter le timer lorsque la fonction est terminée
+        #self.timer.stop()  # Arrêter le timer lorsque la fonction est terminée
 
     def on_thread_error(self, error_message):
         cursor = self.log_widget.textCursor()

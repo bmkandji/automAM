@@ -8,9 +8,16 @@ import src.common as cm
 from src.data_mn import Data
 from utils.load import load_json_config
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import LSTM, Dense, Dropout, Input
+from keras.optimizers import Adam, Nadam
 from keras.callbacks import EarlyStopping
+import numpy as np
+import pandas as pd
+from keras.layers import Conv1D, MaxPooling1D, Flatten, Dense, Dropout
 from utils.load import load_MLmodel, save_MLmodel
 import numpy as np
 import pandas as pd
@@ -21,7 +28,7 @@ from configs.root_config import set_project_root
 set_project_root()
 
 
-class GARCH_Model(_Model):
+class Model(_Model):
     def __init__(self, model_config: dict):
         """
         Initialize the DCC GARCH Model with necessary data and configurations.
@@ -206,7 +213,7 @@ class GARCH_Model(_Model):
         data.update_metrics(self)
 
 
-class Model(_Model):
+class ML_Model(_Model):
     def __init__(self, model_config: dict):
         """
         Initialize the DCC GARCH Model with necessary data and configurations.
@@ -254,7 +261,7 @@ class Model(_Model):
 
         no_fit = model_available and not self.metrics["to_update"]
         model, scaler_X, scaler_y = None, None, None
-        time_steps = 1
+        time_steps = 22
         # MODEL
         if no_fit:
             model, scaler_X, scaler_y = load_MLmodel(*self._model_config["model_config"]["model_path"])
@@ -277,33 +284,46 @@ class Model(_Model):
             y_scaled = scaler_y.fit_transform(y)
             X_train, y_train = cm.create_sequences(X_scaled, y_scaled, time_steps)
             # Defining the LSTM model with an Input layer
-            model = Sequential([
-                Input(shape=(X_train.shape[1], X_train.shape[2])),
-                LSTM(128, activation='relu', return_sequences=True),
-                Dropout(0.3),
-                LSTM(128, activation='relu', return_sequences=True),
-                Dropout(0.3),
-                LSTM(64, activation='relu', return_sequences=True),
-                Dropout(0.3),
-                LSTM(64, activation='relu'),
-                Dropout(0.3),
-                Dense(64, activation='relu'),
-                Dense(32, activation='relu'),
-                Dense(y_train.shape[1], activation='linear')
-            ])
+            def create_model():
+                model = Sequential([
+                    Input(shape=(X_train.shape[1], X_train.shape[2])),
+                    Conv1D(filters=4, kernel_size=2, activation='relu', padding='same'),
+                    Conv1D(filters=4, kernel_size=2, activation='relu', padding='same'),
+                    MaxPooling1D(pool_size=1),
+                    Dropout(0.2),
+                    Flatten(),
+                    Dense(16, activation='relu'),  # Couche intermédiaire ajoutée
+                    Dense(8, activation='relu'),
+                    Dense(y_train.shape[1])
+                ])
 
-            model.compile(optimizer='adam', loss='mean_squared_error')
+                model.compile(optimizer=Nadam(learning_rate=0.001), loss='mean_squared_error')
 
+                return model
+
+            num_models = 10  # Nombre de modèles à entraîner
+            models = []
+            histories = []
             early_stopping = EarlyStopping(monitor='val_loss', patience=10, restore_best_weights=True)
 
-            # Entraînement du modèle
-            model.fit(X_train, y_train,
-                      epochs=300, batch_size=32,
-                      validation_split=0.2,
-                      callbacks=[early_stopping],
-                      verbose=1)
+            for i in range(num_models):
+                model = create_model()
+                print(f"Training model {i + 1}/{num_models}")
+                history = model.fit(X_train, y_train,
+                                    epochs=300, batch_size=32,
+                                    validation_split=0.2,
+                                    callbacks=[early_stopping],
+                                    verbose=1)
+                models.append(model)
+                histories.append(history)
 
-#            save_MLmodel(model, scaler_X, scaler_y, *self._model_config["model_config"]["model_path"])
+            # Sélection du meilleur modèle basé sur la performance de validation
+            val_losses = [history.history['val_loss'][-1] for history in histories]
+            best_model_index = np.argmin(val_losses)
+            model = models[best_model_index]
+
+            #save_MLmodel(model, scaler_X, scaler_y,
+                    #*self._model_config["model_config"]["model_path"])
 
         new_X = cm.sequence_for_predict(data.data[data.data_config["symbols"]].values, time_steps)
 
@@ -336,7 +356,7 @@ class Model(_Model):
             "covariance": covariance,
             "to_update": True
         }
-        #print(metrics)
+
         # to take out of the if/else, if 2 model or plus
         self._metrics = metrics
         data.update_metrics(self)

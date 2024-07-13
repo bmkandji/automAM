@@ -25,7 +25,7 @@ from utils.input import interface_input
 
 if __name__ == '__main__':
     # Load the configuration for the Portfolio Manager
-    input_data = {"selected_assets": ["AAPL", "AMZN", "MSFT"], "selected_strategy": "Tracking-Error", "aversion": "", "tol": 100, "ref_portfolio": "Eq_weighted"}
+    input_data = {"selected_assets": ["Default Settings"], "selected_strategy": "bis", "aversion": "", "tol": 10000, "ref_portfolio": "Eq_weighted"}
     pm_config = load_json_config(r"src/pfManger_settings/pfPaperMananger_settings.json")
     pm_config = interface_input(pm_config, input_data)
 

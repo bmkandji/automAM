@@ -237,7 +237,7 @@ class API(_BrokerAPI, ABC):
 
         return cancellation_results
 
-'''
+"""
 ########### TEST API ##############
 from utils.load import load_json_config
 api_config = load_json_config(r"api_settings/api_settings.json")
@@ -247,6 +247,7 @@ print(alpaca_api.get_open_orders(["AAPL", "AMZN", "GOOGL"]))
 print(alpaca_api.get_current_positions(["AAPL", "AMZN", "GOOGL"]))
 print(alpaca_api.get_current_prices(["AAPL", "AMZN", "GOOGL"]))
 print(alpaca_api.get_total_portfolio_value(["AAPL", "AMZN", "GOOGL"]))
-#print(alpaca_api.place_orders([{"asset": "GOOGL", "units": 0.01, "action": "buy", "type": "qty"}]))
+#print(alpaca_api.place_orders([{"asset": "AMZN", "units": 0.1, "action": "sell", "type": "qty"}]))
+#print(alpaca_api.place_orders([{"asset": "GOOGL", "units": 0.000001, "action": "buy", "type": "qty"}]))
 #print(alpaca_api.cancel_all_open_orders())
-'''
+"""

@@ -1,7 +1,7 @@
 {
     "symbols": ["AAPL", "GOOGL", "MSFT"],
-    "api_key": "AKPVKQXJCLELFITSDSKC",
-    "api_secret": "QRKXsdUCdfPGw7kl0T9ud2F4KLwfD6sQV6mPl1Zj",
+    "api_key": "AK1AW2JQWYZB5I6VDSRM",
+    "api_secret": "78HCBY8XL3SjAhVslLEfh2rrkKwaFq3tXZoyRfgt",
     "base_url": "https://api.alpaca.markets",
     "api_version": "v2",
     "scale": 100,
