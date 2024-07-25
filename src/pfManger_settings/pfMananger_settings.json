@@ -72,8 +72,8 @@
                 },
 
     "api": {
-                "api_key": "AK1AW2JQWYZB5I6VDSRM",
-                "api_secret": "78HCBY8XL3SjAhVslLEfh2rrkKwaFq3tXZoyRfgt",
+                "api_key": "AKZG5XPBXYX40X1LH4NU",
+                "api_secret": "ABAdoZ0snOXhMZ0ddXw06phH0chQH8XqXZTN4QT4",
                 "base_url": "https://api.alpaca.markets",
                 "api_version": "v2",
                 "cash": "USD"
