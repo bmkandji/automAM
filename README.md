@@ -31,21 +31,6 @@ This project aims to automate asset management tasks using a combination of R an
     - Ensure R is installed on your system.
     - Install required R packages (`rmgarch`, `rugarch`, etc.) using the R console or package manager.
 
-4. **Project Structure:**
-    ```plaintext
-    automAM/
-    ├── src/                    # Source code directory
-    │   ├── data_fetcher.py     # Module for fetching financial data
-    │   ├── data_processor.py   # Module for data preprocessing
-    │   ├── model.py            # Module for statistical modeling
-    │   └── portfolio.py        # Module for portfolio optimization
-    │   └── portfolio.py        # Module for portfolio optimization
-    ├── data/                   # Directory for storing data files
-    ├── reports/                # Directory for storing generated reports
-    ├── README.md               # Project README file
-    └── requirements.txt        # File containing required Python packages
-    ```
-
 ## Usage
 1. **Data Retrieval:**
     - Use `data_fetcher.py` to fetch historical financial data for specified assets.
