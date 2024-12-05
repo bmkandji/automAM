@@ -7,7 +7,7 @@ This project aims to automate asset management tasks using a combination of R an
 
 - Python 3.12.0
 - R (recommended version: 4.3.1)
-- 
+  
 ## Features
 - **Data Retrieval:** Fetches historical financial data for specified assets from online sources such as Yahoo Finance or Alpha Vantage.
 - **Data Processing:** Cleans and preprocesses the retrieved data, handling missing values, and adjusting for stock splits and dividends.
