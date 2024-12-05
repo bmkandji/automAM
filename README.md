@@ -31,21 +31,5 @@ This project aims to automate asset management tasks using a combination of R an
     - Ensure R is installed on your system.
     - Install required R packages (`rmgarch`, `rugarch`, etc.) using the R console or package manager.
 
-## Usage
-1. **Data Retrieval:**
-    - Use `data_fetcher.py` to fetch historical financial data for specified assets.
-    
-2. **Data Processing:**
-    - Preprocess the retrieved data using `data_processor.py`.
-    
-3. **Statistical Modeling:**
-    - Fit GARCH models and conduct volatility analysis with `model.py`.
-    
-4. **Portfolio Optimization:**
-    - Utilize portfolio optimization techniques in `portfolio.py` to construct efficient portfolios.
-
-## Contributing
-Contributions to this project are welcome! If you have any ideas, feature requests, or bug reports, please open an issue or submit a pull request.
-
 ## License
 This project is licensed under the [MIT License](LICENSE).
